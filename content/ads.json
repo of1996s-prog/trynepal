@@ -1,5 +1,5 @@
 {
-  "postAd1": "https://placehold.co/600x300/9c3d1e/f5efe1?text=Advertisement+1",
+  "postAd1": "./advertisement/postadv1st.jpg",
   "postAd2": "https://placehold.co/600x300/9c3d1e/f5efe1?text=Advertisement+2",
   "postAd3": "https://placehold.co/600x300/9c3d1e/f5efe1?text=Advertisement+3",
   "postAd4": "https://placehold.co/600x300/9c3d1e/f5efe1?text=Advertisement+4",
