@@ -1,11 +1,11 @@
 {
   "postAd1": "./advertisement/postadv1st.jpg",
   "postAd2": "advertisement/postadv2nd.jpg",
-  "postAd3": "https://trynepal.github.io/of1996s-prog/advertisement/postadv1st.jpg",
-  "postAd4": "https://placehold.co/600x300/9c3d1e/f5efe1?text=Advertisement+4",
+  "postAd3": "advertisement/postadv3rd.jpg",
+  "postAd4": "advertisement/postadv4th.jpg4",
   "mainAds": [
-    "https://placehold.co/300x400/9c3d1e/f5efe1?text=Advertisement+Sidebar+1",
-    "https://placehold.co/300x400/9c3d1e/f5efe1?text=Advertisement+Sidebar+2",
-    "https://placehold.co/300x400/9c3d1e/f5efe1?text=Advertisement+Sidebar+3"
+    "advertisement/mainadv1st.jpg",
+    "advertisement/mainadv2nd.jpg",
+    "advertisement/mainadv3rd.jpg"
   ]
 }
