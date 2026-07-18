@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://connect.facebook.net https://www.youtube.com; style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com 'unsafe-inline'; img-src 'self' https: data:; frame-src https://www.youtube.com https://www.facebook.com https://www.tiktok.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <title>My Website — a personal journal</title>
+  <meta name="description" content="A personal journal — posts, favorite media, and where to find me elsewhere.">
+
+  <!-- Google Fonts: Fraunces (headlines), Inter (body), IBM Plex Mono (labels/bylines) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome, for real platform logos in the footer -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZb9u/crbDwrwuUJErZRapij9+gNwsqwp8v3fsfQyeW11w==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- =====================================================================
+       MAIN — the post column, with the margin rail (Posts + Sponsor)
+       running alongside it. This is the signature layout idea: the post
+       list and the ad share one quiet column instead of competing boxes.
+  ===================================================================== -->
+  <!-- =====================================================================
+       FEATURED STRIP — your banner image + your latest YouTube upload +
+       your latest Facebook post (auto-pulled from your own channel/page,
+       see content/social.json for the username/link fields to edit).
+  ===================================================================== -->
+  <section class="featured" aria-label="Featured media">
+    <p class="section-kicker">Now showing</p>
+
+    <div class="featured-row">
+      <div class="featured-embed" id="featured-youtube">
+        <iframe
+          id="featured-youtube-iframe"
+          src=""
+          title="Latest YouTube upload"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen>
+        </iframe>
+      </div>
+
+      <figure class="featured-banner">
+        <!-- EDIT ME: replace with your own banner image (recommended size
+             in README.md — roughly 1600x700px works best here) -->
+        <img
+          src="https://placehold.co/1600x700/23201a/f5efe1?text=Your+Banner+Image"
+          alt="Site banner"
+          id="banner-img">
+      </figure>
+
+      <div class="featured-embed" id="featured-facebook">
+        <div class="fb-page"
+             id="featured-fb-page"
+             data-tabs="timeline"
+             data-width="340"
+             data-height="210"
+             data-small-header="true"
+             data-hide-cover="true"
+             data-show-facepile="false">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       MASTHEAD — site name, nav, and the rotating "follow us" ticker.
+       Edit the site name/tagline directly below.
+  ===================================================================== -->
+  <header class="masthead">
+    <div class="masthead-top">
+      <div class="masthead-titles">
+        <p class="kicker">A personal journal</p>
+        <h1 class="site-title">My Website</h1>
+      </div>
+
+      <nav class="site-nav">
+        <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+        <ul id="nav-links">
+          <li><a href="#main">Home</a></li>
+          <li><a href="#posts" id="nav-posts-link">Posts</a></li>
+          <li><a href="#contact" id="nav-contact-link">Contact</a></li>
+          <li><a href="#elsewhere">Elsewhere</a></li>
+          <li class="data-saver">
+            <label for="data-saver-toggle">
+              <input type="checkbox" id="data-saver-toggle">
+              Load images
+            </label>
+          </li>
+          <li>
+            <a id="social-ticker" class="ticker" href="#" target="_blank" rel="noopener noreferrer">
+              <i id="social-ticker-icon"></i>
+              <span id="social-ticker-text"></span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="layout">
+
+    <aside class="rail-contents" aria-label="Posts">
+      <p class="rail-label">Posts</p>
+      <ol id="post-list-items">
+        <!-- Generated automatically from content/posts.json. Shows the
+             first 10 at a glance - scroll inside this list for more, or
+             use the button below to browse all of them in the main
+             content area instead, with pages. -->
+      </ol>
+      <button type="button" id="see-more-posts" class="see-more-link">See all posts →</button>
+    </aside>
+
+    <article class="column-article" id="content">
+      <h2>Welcome</h2>
+      <p>
+        This is the homepage. Pick anything from the Posts on the left
+        to read it here — no page reloads, no scrolling away. Everything
+        here is edited from the /admin panel (Decap CMS) or directly in 
+        content/posts.json and content/ads.json.
+      </p>
+    </article>
+
+    <aside class="rail-sponsor" aria-label="Sponsor">
+      <p class="rail-label">Sponsored</p>
+      <div class="ad-placeholder">
+        <img id="main-ad-img" class="lazy-img" alt="Advertisement" data-src="">
+      </div>
+    </aside>
+  </main>
+
+  <!-- =====================================================================
+       ELSEWHERE — social media tabs, posts per platform via official
+       embed widgets (no API keys, no scraping).
+  ===================================================================== -->
+  <section class="elsewhere" id="elsewhere">
+    <p class="section-kicker">Elsewhere</p>
+    <h2>Find me on</h2>
+
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="facebook">Facebook</button>
+      <button class="tab-btn" data-tab="youtube">YouTube</button>
+      <button class="tab-btn" data-tab="tiktok">TikTok</button>
+    </div>
+
+    <div class="tab-panel active" id="panel-facebook">
+      <div class="fb-page"
+           id="elsewhere-fb-page"
+           data-tabs="timeline"
+           data-width="500"
+           data-height="480"
+           data-small-header="false"
+           data-adapt-container-width="true">
+      </div>
+    </div>
+
+    <div class="tab-panel" id="panel-youtube">
+      <div id="elsewhere-youtube-iframe"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-tiktok">
+      <!-- TikTok doesn't offer a no-login "latest posts" embed, so this
+           is a direct link to the profile. -->
+      <div id="elsewhere-tiktok-link"></div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       COLOPHON (footer) — social links + copyright, in the old
+       printing-press tradition of a colophon page.
+  ===================================================================== -->
+  <footer class="colophon" id="contact">
+    <div class="colophon-social">
+      <a id="footer-youtube" href="#" target="_blank" rel="noopener noreferrer"><i class="fab fa-youtube"></i> YouTube</a>
+      <a id="footer-tiktok" href="#" target="_blank" rel="noopener noreferrer"><i class="fab fa-tiktok"></i> TikTok</a>
+      <a id="footer-instagram" href="#" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i> Instagram</a>
+      <a id="footer-facebook" href="#" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook"></i> Facebook</a>
+      <a id="footer-x" href="#" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i> X</a>
+      <a id="footer-email" href="#"><i class="fas fa-envelope"></i> Email</a>
+    </div>
+    <p class="colophon-copy">&copy; <span id="year"></span> My Website — written, edited, and published by hand.</p>
+  </footer>
+
+  <!-- The Facebook SDK is injected dynamically by script.js, AFTER your
+       username/link fields from content/social.json have been written
+       into the page. That ordering matters: if it ran first, it would
+       render before your real links were in place. -->
+  <div id="fb-root"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

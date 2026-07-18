@@ -1,0 +1,930 @@
+/* =========================================================================
+   DESIGN TOKENS
+   Warm & editorial: paper tones, a characterful display serif, and a
+   brick-rust accent. Change any of these and the whole site follows.
+========================================================================= */
+:root {
+  --paper: #F5EFE1;
+  --paper-deep: #EDE4CF;
+  --ink: #221D16;
+  --rust: #9C3D1E;
+  --moss: #4B5D3A;
+  --brass: #B8862F;
+  --rule: #D8CBB0;
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "IBM Plex Mono", "Courier New", monospace;
+
+  --measure: 68ch;        /* comfortable reading line length for articles */
+  --content-max: 1180px;
+  --sticky-header-height: 6rem;   /* approx. masthead height, used to offset the side rails */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Every anchor-jump / scrollIntoView target needs this, otherwise its
+   top edge lands exactly at y=0 - directly BEHIND the sticky masthead
+   (which also sits at y=0 with a solid background). Without this, a
+   post's title (or any section you jump to) ends up hidden under the
+   header, making the page look like it "opened from the middle." */
+#main,
+#content,
+#contact,
+#elsewhere {
+  scroll-margin-top: calc(var(--sticky-header-height, 6rem) + 1rem);
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.15;
+  margin: 0 0 0.5em;
+}
+
+a {
+  color: var(--rust);
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Visible keyboard focus everywhere - accessibility floor */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--rust);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.6rem 1rem;
+  z-index: 1000;
+}
+
+.skip-link:focus {
+  left: 0.5rem;
+  top: 0.5rem;
+}
+
+.section-kicker,
+.rail-label,
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 0 0 0.4rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* =========================================================================
+   MASTHEAD
+========================================================================= */
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--paper);
+  border-bottom: 3px solid var(--ink);
+  padding: 1.5rem clamp(1rem, 4vw, 3rem) 1rem;
+}
+
+.masthead-top {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.site-title {
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  letter-spacing: -0.01em;
+}
+
+/* Compact state, added by script.js once the page is scrolled a little -
+   shrinks the title and tightens the padding into a clean frozen bar. */
+.masthead.is-compact {
+  padding: 0.55rem clamp(1rem, 4vw, 3rem);
+}
+
+.masthead.is-compact .kicker {
+  display: none;
+}
+
+.masthead.is-compact .site-title {
+  font-size: 1.35rem;
+}
+
+.masthead.is-compact .ticker {
+  height: 1.4rem;
+  font-size: 0.78rem;
+  margin-top: 0;
+}
+
+.site-nav ul {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+.site-nav a {
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 2px;
+  transition: border-color 0.15s ease;
+}
+
+.site-nav a:hover {
+  border-color: var(--rust);
+}
+
+.data-saver label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.nav-toggle span {
+  width: 22px;
+  height: 2px;
+  background: var(--ink);
+  display: block;
+}
+
+/* =========================================================================
+   FEATURED STRIP
+========================================================================= */
+.featured {
+  max-width: var(--content-max);
+  margin: 2.5rem auto;
+  padding: 0 clamp(1rem, 4vw, 3rem);
+}
+
+.featured-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+.featured-embed {
+  background: var(--ink);
+  border-radius: 4px;
+  overflow: hidden;
+  min-height: 210px;
+  display: flex;
+}
+
+.featured-embed iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.featured-embed .fb-post,
+.featured-embed .fb-page {
+  margin: auto;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.featured-banner {
+  margin: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  min-height: 210px;
+}
+
+.featured-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Rotating "follow us" link, now inline in the nav bar - understated,
+   typewriter-styled */
+.ticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 1.6rem;
+  width: 15rem;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--moss);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--rule);
+}
+
+.ticker:hover {
+  color: var(--rust);
+}
+
+#social-ticker-text {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+@media (max-width: 800px) {
+  .featured-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================================
+   MAIN LAYOUT — article column + margin rail (the signature idea)
+========================================================================= */
+.layout {
+  max-width: var(--content-max);
+  margin: 1rem auto 3rem;
+  padding: 0 clamp(1rem, 4vw, 3rem);
+  display: grid;
+  grid-template-columns: 210px 1fr 230px;
+  gap: 2.25rem;
+  align-items: start;
+}
+
+.column-article {
+  max-width: var(--measure);
+  animation: article-fade-in 0.35s ease;
+}
+
+@keyframes article-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.column-article h2 {
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+}
+
+.column-article img {
+  border-radius: 4px;
+  margin: 1.25rem 0;
+}
+
+.post-date {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--brass);
+  margin: 0.5rem 0 1rem;
+}
+
+.post-article {
+  width: 100%;
+}
+
+/* Post ads: a quiet horizontal strip inside the article, framed by
+   hairline rules so it reads as a printed "sponsored" break */
+.post-ad {
+  margin: 1.1rem 0;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  text-align: center;
+}
+
+.post-ad-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin-bottom: 0.5rem;
+}
+
+.post-ad img {
+  margin: 0 auto;
+  max-height: 220px;
+  object-fit: contain;
+}
+
+/* =========================================================================
+   POST GRID LAYOUT — For the "All Posts" paginated view
+========================================================================= */
+.post-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.post-card {
+  background: white;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.post-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.post-card-image {
+  width: 100%;
+  height: 200px;
+  background: var(--paper-deep);
+  overflow: hidden;
+}
+
+.post-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.post-card-image .no-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--brass);
+  font-size: 0.9rem;
+}
+
+.post-card h3 {
+  margin: 1rem;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.post-card-date {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--brass);
+  margin: 0 1rem 0.5rem;
+}
+
+.post-card .read-more {
+  margin: 0 1rem 1rem;
+  margin-top: auto;
+  padding: 0.6rem 1rem;
+  background: var(--rust);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.post-card .read-more:hover {
+  background: var(--ink);
+}
+
+/* =========================================================================
+   SIDE RAILS — Posts (left) and Sponsored ad (right), each sticking
+   in place independently as you scroll
+========================================================================= */
+.rail-contents {
+  position: sticky;
+  top: calc(var(--sticky-header-height, 5rem) + 1rem);
+  border-right: 1px solid var(--rule);
+  padding-right: 1.25rem;
+}
+
+.rail-sponsor {
+  position: sticky;
+  top: calc(var(--sticky-header-height, 5rem) + 1rem);
+  border-left: 1px solid var(--rule);
+  padding-left: 1.25rem;
+}
+
+.rail-label {
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.4rem;
+}
+
+#post-list-items {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  max-height: 480px;     /* roughly 10 items - scroll inside for the rest */
+  overflow-y: auto;
+}
+
+#post-list-items li {
+  margin-bottom: 0.9rem;
+}
+
+#post-list-items button {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  line-height: 1.35;
+  width: 100%;
+}
+
+#post-list-items .num {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--brass);
+}
+
+#post-list-items .date {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--brass);
+  opacity: 0.8;
+}
+
+#post-list-items button:hover .title,
+#post-list-items button:focus-visible .title {
+  color: var(--rust);
+  text-decoration: underline;
+}
+
+.see-more-link {
+  display: block;
+  width: 100%;
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--rule);
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--rust);
+  cursor: pointer;
+}
+
+.see-more-link:hover {
+  text-decoration: underline;
+}
+
+/* ---- Paginated "all posts" index, shown in the main content area ---- */
+.post-index-meta {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: #8a7f68;
+}
+
+.post-index-pagination {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.post-index-pagination button {
+  min-width: 2.2rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--rule);
+  background: none;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.post-index-pagination button.active {
+  border-color: var(--rust);
+  color: var(--rust);
+  font-weight: 600;
+}
+
+.post-index-pagination button:hover {
+  border-color: var(--rust);
+}
+
+.ad-placeholder {
+  margin-top: 0.75rem;
+  min-height: 300px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--paper-deep);
+}
+
+.ad-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.advertise-with-us {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  text-align: center;
+  color: #8a7f68;
+  box-sizing: border-box;
+}
+
+.ad-placeholder .advertise-with-us {
+  height: 100%;
+  min-height: 300px;
+}
+
+.post-ad .advertise-with-us {
+  flex-direction: row;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0;
+}
+
+.post-ad .advertise-with-us p {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.post-ad .advertise-with-us a {
+  font-size: 0.78rem;
+}
+
+.advertise-with-us p {
+  margin: 0 0 0.4rem;
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.advertise-with-us a {
+  font-size: 0.85rem;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .rail-contents,
+  .rail-sponsor {
+    border: none;
+    padding: 1.5rem 0 0;
+    position: static;
+  }
+  .rail-contents {
+    border-top: 1px solid var(--rule);
+  }
+  .rail-sponsor {
+    border-top: 1px solid var(--rule);
+  }
+}
+
+/* =========================================================================
+   ELSEWHERE (social tabs) with 3x3 grid
+========================================================================= */
+.elsewhere {
+  max-width: var(--content-max);
+  margin: 2rem auto 3rem;
+  padding: 0 clamp(1rem, 4vw, 3rem);
+}
+
+.elsewhere h2 {
+  font-size: 1.8rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0 1.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.6rem 0.2rem;
+  margin-right: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8a7f68;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  color: var(--rust);
+  border-color: var(--rust);
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+/* Social grid: 3x3 layout for YouTube, Facebook, TikTok */
+.social-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.social-item {
+  background: var(--ink);
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.social-item iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Facebook placeholder cards in grid */
+.facebook-item {
+  background: white;
+  border: 1px solid var(--rule);
+  padding: 1rem;
+  aspect-ratio: auto;
+  min-height: 150px;
+}
+
+.facebook-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 100%;
+}
+
+.fb-placeholder-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.fb-placeholder-header i {
+  color: #1877f2;
+  font-size: 1.5rem;
+}
+
+.facebook-placeholder p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--brass);
+}
+
+.facebook-placeholder a {
+  color: var(--rust);
+  text-decoration: none;
+}
+
+.facebook-placeholder a:hover {
+  text-decoration: underline;
+}
+
+/* TikTok link cards in grid */
+.tiktok-item {
+  background: white;
+  border: 1px solid var(--rule);
+  padding: 0;
+  aspect-ratio: auto;
+}
+
+.tiktok-card-small {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  height: 100%;
+  min-height: 150px;
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 0.2s ease;
+  padding: 1rem;
+  text-align: center;
+}
+
+.tiktok-card-small:hover {
+  background: var(--paper-deep);
+}
+
+.tiktok-card-small i {
+  font-size: 2rem;
+  color: var(--rust);
+}
+
+.tiktok-card-small span {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Each Elsewhere panel embeds */
+.tab-panel > iframe,
+.tab-panel > .fb-page,
+.tab-panel > .tiktok-embed {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0 auto;
+  border: none;
+  border-radius: 4px;
+}
+
+.tab-panel > iframe {
+  display: block;
+}
+
+.tiktok-grid {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+.tiktok-link-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.tiktok-link-card i {
+  font-size: 1.4rem;
+  color: var(--rust);
+}
+
+.tiktok-link-card:hover {
+  border-color: var(--rust);
+  transform: translateY(-2px);
+}
+
+/* =========================================================================
+   COLOPHON (footer)
+========================================================================= */
+.colophon {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 2rem clamp(1rem, 4vw, 3rem);
+  text-align: center;
+}
+
+.colophon-social {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.colophon-social a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--paper);
+  text-decoration: none;
+  font-size: 0.88rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid rgba(245, 239, 225, 0.25);
+  border-radius: 999px;
+  transition: background 0.15s ease;
+}
+
+.colophon-social a:hover {
+  background: var(--rust);
+  border-color: var(--rust);
+}
+
+.colophon-copy {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: rgba(245, 239, 225, 0.7);
+  margin: 0;
+}
+
+/* =========================================================================
+   MOBILE NAV
+========================================================================= */
+@media (max-width: 700px) {
+  .nav-toggle {
+    display: flex;
+  }
+
+  .site-nav {
+    position: relative;
+  }
+
+  #nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+    gap: 0.75rem;
+    z-index: 20;
+    min-width: 200px;
+  }
+
+  #nav-links.open {
+    display: flex;
+  }
+
+  .social-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .post-grid {
+    grid-template-columns: 1fr;
+  }
+}

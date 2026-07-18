@@ -1,0 +1,83 @@
+# =============================================================================
+# DECAP CMS CONFIG
+#
+# ONE-TIME SETUP THIS FILE CANNOT DO FOR YOU:
+# GitHub Pages is a plain static host — it can't complete a GitHub login by
+# itself. To let Decap CMS save changes back to your repo, you still need:
+#   1. A GitHub OAuth App (create one at github.com/settings/developers)
+#   2. A small OAuth "proxy" service to complete the login handshake
+#      (Decap's docs list ready-made options — search their site for
+#      "Decap CMS + GitHub backend + external OAuth client" for the
+#      current recommended proxy to deploy; it's a few free-tier minutes
+#      on a service like Cloudflare Workers or Vercel, not a paid server).
+# Until that's set up, this file is still useful (defines *what* is
+# editable) but the "Login with GitHub" button on /admin won't work yet.
+# =============================================================================
+
+backend:
+  name: github
+  repo: YOUR_GITHUB_USERNAME/YOUR_REPO_NAME   # EDIT ME
+  branch: main                                 # EDIT ME if your default branch differs
+
+# Where images/gifs you upload through the CMS media picker are stored,
+# and the URL path used to reference them on the live site.
+media_folder: "advertisement"
+public_folder: "/advertisement"
+
+collections:
+
+  # ---------------------------------------------------------------------
+  # POSTS — edits content/posts.json (the list shown in the left sidebar)
+  # ---------------------------------------------------------------------
+  - name: "posts"
+    label: "Posts"
+    file: "content/posts.json"
+    format: "json"
+    fields:
+      - label: "Posts"
+        name: "posts"
+        widget: "list"
+        summary: "{{fields.title}}"
+        fields:
+          - { label: "Title", name: "title", widget: "string" }
+          - { label: "Image (optional)", name: "image", widget: "image", required: false }
+          - { label: "Body", name: "body", widget: "text",
+              hint: "Leave a blank line between paragraphs. The site splits this into 3 equal parts to place ad 2 and ad 3 in the middle." }
+
+  # ---------------------------------------------------------------------
+  # ADVERTISEMENTS — edits content/ads.json
+  # ---------------------------------------------------------------------
+  - name: "ads"
+    label: "Advertisements"
+    file: "content/ads.json"
+    format: "json"
+    fields:
+      - { label: "Post Ad 1 — shown at the START of every post", name: "postAd1", widget: "image" }
+      - { label: "Post Ad 2 — shown after the first third", name: "postAd2", widget: "image" }
+      - { label: "Post Ad 3 — shown after the second third", name: "postAd3", widget: "image" }
+      - { label: "Post Ad 4 — shown at the END of every post", name: "postAd4", widget: "image" }
+      - label: "Main Sidebar Ads (rotate as visitors scroll)"
+        name: "mainAds"
+        widget: "list"
+        field: { label: "Ad Image", name: "image", widget: "image" }
+
+  # ---------------------------------------------------------------------
+  # SOCIAL — edits content/social.json. One username/ID per platform,
+  # used everywhere: the featured strip, the Elsewhere "latest posts"
+  # embeds, the footer links, the contact email, and the rotating
+  # "follow us" ticker. Change it here once instead of hunting through code.
+  # ---------------------------------------------------------------------
+  - name: "social"
+    label: "Social Links"
+    file: "content/social.json"
+    format: "json"
+    fields:
+      - { label: "YouTube Channel ID (for your latest-uploads feed)", name: "youtubeChannelId", widget: "string",
+          hint: "Found in YouTube Studio → Settings → Channel → Advanced settings. Starts with UC." }
+      - { label: "Featured YouTube Video ID (your pick, shown in the top banner)", name: "youtubeFeaturedVideoId", widget: "string",
+          hint: "The part after v= in a YouTube video URL." }
+      - { label: "Facebook Page username", name: "facebookUsername", widget: "string" }
+      - { label: "TikTok username", name: "tiktokUsername", widget: "string" }
+      - { label: "Instagram username", name: "instagramUsername", widget: "string" }
+      - { label: "X username", name: "xUsername", widget: "string" }
+      - { label: "Contact email", name: "email", widget: "string" }

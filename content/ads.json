@@ -1,0 +1,11 @@
+{
+  "postAd1": "https://placehold.co/600x300/9c3d1e/f5efe1?text=Advertisement+1",
+  "postAd2": "https://placehold.co/600x300/9c3d1e/f5efe1?text=Advertisement+2",
+  "postAd3": "https://placehold.co/600x300/9c3d1e/f5efe1?text=Advertisement+3",
+  "postAd4": "https://placehold.co/600x300/9c3d1e/f5efe1?text=Advertisement+4",
+  "mainAds": [
+    "https://placehold.co/300x400/9c3d1e/f5efe1?text=Advertisement+Sidebar+1",
+    "https://placehold.co/300x400/9c3d1e/f5efe1?text=Advertisement+Sidebar+2",
+    "https://placehold.co/300x400/9c3d1e/f5efe1?text=Advertisement+Sidebar+3"
+  ]
+}
