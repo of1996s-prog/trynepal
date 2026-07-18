@@ -2,10 +2,10 @@
   "postAd1": "./advertisement/postadv1st.jpg",
   "postAd2": "advertisement/postadv2nd.jpg",
   "postAd3": "advertisement/postadv3rd.jpg",
-  "postAd4": "advertisement/postadv4th.jpg4",
+  "postAd4": "advertisement/postadv4th.jpg",
   "mainAds": [
     "advertisement/mainadv1.jpg",
-    "advertisement/mainadv2.jpg",
-    "advertisement/mainadv3.jpg"
+    "",
+    ""
   ]
 }
