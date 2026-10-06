@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://connect.facebook.net https://www.youtube.com; style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com 'unsafe-inline'; img-src 'self' https: data:; frame-src https://www.youtube.com https://www.facebook.com https://www.tiktok.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://connect.facebook.net https://www.youtube.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.googleapis.com https://fonts.gstatic.com; frame-src https://www.youtube.com https://www.facebook.com https://www.tiktok.com;">
   <title>My Website — a personal journal</title>
   <meta name="description" content="A personal journal — posts, favorite media, and where to find me elsewhere.">
 
@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <!-- Font Awesome, for real platform logos in the footer -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZb9u/crbDwrwuUJErZRapij9+gNwsqwp8v3fsfQyeW11w==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZb9u/crbDwrwuUJErZRapij9+gNws" crossorigin="anonymous">
 
   <link rel="stylesheet" href="style.css">
 </head>
@@ -21,11 +21,6 @@
 
   <a class="skip-link" href="#main">Skip to content</a>
 
-  <!-- =====================================================================
-       MAIN — the post column, with the margin rail (Posts + Sponsor)
-       running alongside it. This is the signature layout idea: the post
-       list and the ad share one quiet column instead of competing boxes.
-  ===================================================================== -->
   <!-- =====================================================================
        FEATURED STRIP — your banner image + your latest YouTube upload +
        your latest Facebook post (auto-pulled from your own channel/page,
@@ -120,13 +115,29 @@
     </aside>
 
     <article class="column-article" id="content">
-      <h2>Welcome</h2>
-      <p>
-        This is the homepage. Pick anything from the Posts on the left
-        to read it here — no page reloads, no scrolling away. Everything
-        here is edited from the /admin panel (Decap CMS) or directly in 
-        content/posts.json and content/ads.json.
-      </p>
+      <div class="homepage-hero">
+        <h2>Welcome</h2>
+        <p class="hero-subtitle">Discover stories, insights, and moments from my world</p>
+        <div class="hero-cta">
+          <button class="btn-primary" id="explore-posts-btn">Explore Posts</button>
+          <button class="btn-secondary" id="explore-videos-btn">Watch Videos</button>
+        </div>
+      </div>
+
+      <!-- YouTube Video Carousel (Apple.com style) -->
+      <section class="video-carousel" id="video-carousel-section">
+        <h3>Featured Videos</h3>
+        <div class="carousel-container">
+          <button class="carousel-nav carousel-prev" aria-label="Previous video">‹</button>
+          <div class="carousel-wrapper">
+            <div class="carousel-track" id="carousel-track">
+              <!-- Videos loaded here from social.json -->
+            </div>
+          </div>
+          <button class="carousel-nav carousel-next" aria-label="Next video">›</button>
+        </div>
+        <div class="carousel-dots" id="carousel-dots"></div>
+      </section>
     </article>
 
     <aside class="rail-sponsor" aria-label="Sponsor">
