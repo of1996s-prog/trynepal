@@ -12,26 +12,7 @@
    one-time GitHub OAuth setup is done (see admin/config.yml).
 ========================================================================= */
 
-
-/* ---- 0. Fallback content ----
-   Used ONLY if content/posts.json, content/ads.json, or
-   content/social.json can't be fetched - e.g. opening this file
-   directly as file://... instead of through a real web server (fetch()
-   can't read local files that way - a browser security rule, not a
-   bug), or a genuine network hiccup.
-
-   This is deliberately NOT a full copy of your real content. An
-   earlier version mirrored everything here, which caused real
-   confusion: editing content/ads.json alone looked like it "wasn't
-   working" whenever this fallback silently took over instead. Now
-   there's only one source of truth - content/*.json - and this
-   fallback is small and obviously a fallback, so it's never mistaken
-   for your real content.
-
-   On GitHub Pages, fetch() succeeds and your real JSON files are what
-   actually shows - this fallback should never appear there. To test
-   locally with your real content, run a local server (see README.md)
-   instead of double-clicking index.html. ---- */
+/* ---- 0. Fallback content ---- */
 const fallbackPosts = [
   {
     title: "Content is loading…",
@@ -59,7 +40,6 @@ const fallbackSocial = {
   tiktokVideos: []
 };
 
-
 async function fetchJson(path, fallback) {
   try {
     const res = await fetch(path, { cache: "no-store" });
@@ -71,14 +51,12 @@ async function fetchJson(path, fallback) {
   }
 }
 
-/* ---- Helper: Sanitize HTML to prevent XSS ---- */
 function sanitizeHtml(html) {
   const div = document.createElement("div");
   div.textContent = html;
   return div.innerHTML;
 }
 
-/* ---- Helper: Format date ---- */
 function formatDate(dateString) {
   if (!dateString) return "";
   try {
@@ -89,12 +67,44 @@ function formatDate(dateString) {
   }
 }
 
-/* ---- 1. Ad helpers: Support both image and YouTube video ads ---- */
-function advertiseWithUsHtml() {
-  return `<div class="advertise-with-us">
-             <p>Advertise with us</p>
-             <a href="mailto:you@example.com">Contact us to place your ad here</a>
-           </div>`;
+function extractYouTubeEmbedUrl(value) {
+  if (!value || typeof value !== "string") return "";
+  const cleaned = value.trim();
+  if (!cleaned) return "";
+
+  if (/^[A-Za-z0-9_-]{11}$/.test(cleaned)) {
+    return `https://www.youtube.com/embed/${cleaned}`;
+  }
+
+  try {
+    const url = new URL(cleaned);
+    const hostname = url.hostname.toLowerCase();
+
+    if (hostname.includes("youtube.com")) {
+      const v = url.searchParams.get("v");
+      if (v) return `https://www.youtube.com/embed/${v}`;
+      const path = url.pathname || "";
+      if (path.includes("/embed/")) return cleaned;
+      if (path.includes("/shorts/")) {
+        const id = path.split("/shorts/")[1]?.split("/")[0];
+        if (id) return `https://www.youtube.com/embed/${id}`;
+      }
+      const segments = path.split("/").filter(Boolean);
+      if (segments.length >= 2 && segments[0] === "watch") {
+        const id = segments[1];
+        if (id) return `https://www.youtube.com/embed/${id}`;
+      }
+    }
+
+    if (hostname.includes("youtu.be")) {
+      const id = url.pathname.replace("/", "").split("/")[0];
+      if (id) return `https://www.youtube.com/embed/${id}`;
+    }
+  } catch (err) {
+    return "";
+  }
+
+  return "";
 }
 
 function normalizeAdObject(item, fallbackLabel) {
@@ -131,6 +141,13 @@ function normalizeAdObject(item, fallbackLabel) {
   }
 
   return null;
+}
+
+function advertiseWithUsHtml() {
+  return `<div class="advertise-with-us">
+            <p>Advertise with us</p>
+            <a href="mailto:you@example.com">Contact us to place your ad here</a>
+          </div>`;
 }
 
 function buildAdHtml(adData, slotId) {
@@ -191,8 +208,6 @@ function paragraphsFromBody(body) {
     .map((chunk) => `<p>${chunk}</p>`);
 }
 
-
-/* ---- 2. Render the Posts list + click-to-load posts ---- */
 const postListEl = document.getElementById("post-list-items");
 const contentEl = document.getElementById("content");
 
@@ -249,7 +264,7 @@ function loadPost(index) {
   let html = `<article class="post-article">
     <h2>${sanitizeHtml(post.title)}</h2>
     <p class="post-date">Published: ${formatDate(post.date)}</p>`;
-  
+
   if (post.image) {
     html += `<img data-src="${sanitizeHtml(post.image)}" alt="${sanitizeHtml(post.title)}" class="lazy-img">`;
   }
@@ -273,10 +288,6 @@ function loadPost(index) {
   });
 }
 
-
-/* ---- 2b. Paginated "all posts" index - shown in the main content area
-   after clicking "Posts" in nav or "See all posts". 12 posts per
-   page in a 3x4 grid layout. ---- */
 const POSTS_PER_PAGE = 12;
 
 function renderPostIndex(page) {
@@ -331,18 +342,16 @@ if (seeMoreBtn) {
   seeMoreBtn.addEventListener("click", () => renderPostIndex(1));
 }
 
-
-/* ---- 3. Mobile nav toggle ---- */
 const navToggle = document.getElementById("nav-toggle");
 const navLinks = document.getElementById("nav-links");
 
-navToggle.addEventListener("click", () => {
-  const isOpen = navLinks.classList.toggle("open");
-  navToggle.setAttribute("aria-expanded", String(isOpen));
-});
+if (navToggle && navLinks) {
+  navToggle.addEventListener("click", () => {
+    const isOpen = navLinks.classList.toggle("open");
+    navToggle.setAttribute("aria-expanded", String(isOpen));
+  });
+}
 
-
-/* ---- 4. Image loading: connection speed + manual toggle ---- */
 const dataSaverToggle = document.getElementById("data-saver-toggle");
 
 function getSavedPreference() {
@@ -375,11 +384,13 @@ function applyImageLoadingPreference() {
   });
 }
 
-dataSaverToggle.checked = shouldLoadImagesAutomatically();
-dataSaverToggle.addEventListener("change", () => {
-  localStorage.setItem("loadImages", String(dataSaverToggle.checked));
-  applyImageLoadingPreference();
-});
+if (dataSaverToggle) {
+  dataSaverToggle.checked = shouldLoadImagesAutomatically();
+  dataSaverToggle.addEventListener("change", () => {
+    localStorage.setItem("loadImages", String(dataSaverToggle.checked));
+    applyImageLoadingPreference();
+  });
+}
 
 window.addEventListener("DOMContentLoaded", () => {
   const banner = document.getElementById("banner-img");
@@ -390,8 +401,6 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-
-/* ---- 5. Elsewhere tabs (Facebook / YouTube / TikTok) with flexible grid ---- */
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabPanels = document.querySelectorAll(".tab-panel");
 
@@ -407,11 +416,13 @@ function renderSocialGrid(platform, items) {
   let html = `<div class="social-grid" data-items="${items.length}">`;
   items.forEach((item, index) => {
     if (platform === "youtube") {
+      const embedUrl = extractYouTubeEmbedUrl(item);
+      if (!embedUrl) return;
       html += `<div class="social-item">
         <iframe 
           width="100%" 
           height="315" 
-          src="${sanitizeHtml(item)}" 
+          src="${sanitizeHtml(embedUrl)}" 
           title="YouTube Video ${index + 1}"
           frameborder="0" 
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
@@ -441,7 +452,7 @@ function renderSocialGrid(platform, items) {
     }
   });
   html += `</div>`;
-  
+
   panel.innerHTML = html;
 }
 
@@ -455,8 +466,6 @@ tabButtons.forEach((btn) => {
   });
 });
 
-
-/* ---- 6. Sponsored (main) ad rotation as the visitor scrolls the page ---- */
 const adPlaceholderEl = document.querySelector(".ad-placeholder");
 let currentMainAdIndex = -1;
 
@@ -500,7 +509,7 @@ function renderSidebarAd(ad) {
     adPlaceholderEl.innerHTML = `
       <img
         class="lazy-img"
-        alt="${sanitizeHtml(ad.title || "Advertisement")}"
+        alt="${sanitizeHtml(ad.title || "Advertisement")}" 
         data-src="${sanitizeHtml(ad.src)}"
       >
     `;
@@ -525,7 +534,7 @@ function showMainAd(index) {
 
   if (index === currentMainAdIndex) return;
   currentMainAdIndex = index;
-  
+
   renderSidebarAd(ad);
 }
 
@@ -548,10 +557,6 @@ window.addEventListener("scroll", () => {
   }
 });
 
-
-/* ---- 7. Rotating "follow us" ticker - typing always finishes even
-   while hovered; only the switch to the NEXT message waits for the
-   mouse to leave ---- */
 const socialItems = [
   { label: "Subscribe on YouTube", url: "https://youtube.com/@yourchannel", icon: "fab fa-youtube" },
   { label: "Follow along on Facebook", url: "https://facebook.com/yourpage", icon: "fab fa-facebook" },
@@ -598,27 +603,25 @@ function showTickerItem() {
   typeTickerText(item.label, 0);
 }
 
-socialTicker.addEventListener("mouseenter", () => {
-  tickerHovered = true;
-  if (tickerTypingComplete) clearTimeout(tickerTimeout);
-});
+if (socialTicker) {
+  socialTicker.addEventListener("mouseenter", () => {
+    tickerHovered = true;
+    if (tickerTypingComplete) clearTimeout(tickerTimeout);
+  });
 
-socialTicker.addEventListener("mouseleave", () => {
-  tickerHovered = false;
-  if (tickerTypingComplete) scheduleAdvance();
-});
+  socialTicker.addEventListener("mouseleave", () => {
+    tickerHovered = false;
+    if (tickerTypingComplete) scheduleAdvance();
+  });
 
-showTickerItem();
+  showTickerItem();
+}
 
-
-/* ---- 8. Social config: one JSON file drives the featured embeds,
-   the Elsewhere "latest posts" embeds, the footer links, the contact
-   email, and the ticker. ---- */
 function applySocialConfig(social) {
-  // Featured strip: your hand-picked favorite video + Facebook page
   const featuredYoutube = document.getElementById("featured-youtube-iframe");
   if (featuredYoutube && social.youtubeFeaturedVideoId) {
-    featuredYoutube.src = `https://www.youtube.com/embed/${sanitizeHtml(social.youtubeFeaturedVideoId)}`;
+    const embedUrl = extractYouTubeEmbedUrl(social.youtubeFeaturedVideoId);
+    if (embedUrl) featuredYoutube.src = embedUrl;
   }
 
   const featuredFb = document.getElementById("featured-fb-page");
@@ -626,10 +629,11 @@ function applySocialConfig(social) {
     featuredFb.setAttribute("data-href", `https://www.facebook.com/${social.facebookUsername}`);
   }
 
-  // Elsewhere tabs: render grids based on arrays in social.json
   const youtubeVideos = social.youtubeVideos || [];
   const facebookPosts = social.facebookPosts || [];
   const tiktokVideos = social.tiktokVideos || [];
+
+  renderHomeVideoCarousel(youtubeVideos);
 
   if (youtubeVideos.length > 0) {
     renderSocialGrid("youtube", youtubeVideos);
@@ -641,7 +645,6 @@ function applySocialConfig(social) {
     renderSocialGrid("tiktok", tiktokVideos);
   }
 
-  // Footer and ticker social links
   const links = {
     youtube: social.youtubeChannelId ? `https://www.youtube.com/channel/${social.youtubeChannelId}` : "#",
     facebook: social.facebookUsername ? `https://facebook.com/${social.facebookUsername}` : "#",
@@ -665,19 +668,95 @@ function applySocialConfig(social) {
     if (el) el.href = idToLink[id];
   });
 
-  socialItems[0].url = links.youtube;
-  socialItems[1].url = links.facebook;
-  socialItems[2].url = links.tiktok;
-  socialItems[3].url = links.instagram;
-  socialItems[4].url = links.x;
-  socialTicker.href = socialItems[tickerIndex].url;
+  if (socialItems.length) {
+    socialItems[0].url = links.youtube;
+    socialItems[1].url = links.facebook;
+    socialItems[2].url = links.tiktok;
+    socialItems[3].url = links.instagram;
+    socialItems[4].url = links.x;
+    if (socialTicker) socialTicker.href = socialItems[tickerIndex].url;
+  }
 }
 
-// The Facebook SDK only scans the page ONCE, when it finishes loading -
-// so it's injected here, AFTER applySocialConfig has written your real
-// Facebook link into the page, instead of as a static <script> tag in
-// index.html. Loading it any earlier would make it render before your
-// real content/social.json value was in place.
+function renderHomeVideoCarousel(videos) {
+  const track = document.getElementById("carousel-track");
+  const dots = document.getElementById("carousel-dots");
+  const prevBtn = document.querySelector(".carousel-prev");
+  const nextBtn = document.querySelector(".carousel-next");
+
+  if (!track || !dots) return;
+
+  const validVideos = (videos || []).map((video) => extractYouTubeEmbedUrl(video)).filter(Boolean);
+
+  if (!validVideos.length) {
+    track.innerHTML = `<div class="carousel-video-item"><iframe src="https://www.youtube.com/embed/hws97JEXYX8?rel=0&modestbranding=1" title="Featured video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+    dots.innerHTML = `<button class="carousel-dot active" type="button" aria-label="Show slide 1"></button>`;
+    return;
+  }
+
+  let currentSlide = 0;
+
+  function renderSlide() {
+    track.innerHTML = validVideos.map((video) => `
+      <div class="carousel-video-item">
+        <iframe src="${video}" title="Featured video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    `).join("");
+
+    track.style.transform = `translateX(-${currentSlide * 100}%)`;
+
+    dots.innerHTML = validVideos.map((_, idx) => `
+      <button class="carousel-dot ${idx === currentSlide ? "active" : ""}" type="button" aria-label="Show slide ${idx + 1}"></button>
+    `).join("");
+
+    dots.querySelectorAll(".carousel-dot").forEach((dot, idx) => {
+      dot.addEventListener("click", () => {
+        currentSlide = idx;
+        renderSlide();
+      });
+    });
+
+    if (prevBtn) prevBtn.disabled = validVideos.length <= 1;
+    if (nextBtn) nextBtn.disabled = validVideos.length <= 1;
+  }
+
+  if (prevBtn) {
+    prevBtn.addEventListener("click", () => {
+      currentSlide = (currentSlide - 1 + validVideos.length) % validVideos.length;
+      renderSlide();
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => {
+      currentSlide = (currentSlide + 1) % validVideos.length;
+      renderSlide();
+    });
+  }
+
+  renderSlide();
+}
+
+function setupHomeButtons() {
+  const explorePostsBtn = document.getElementById("explore-posts-btn");
+  const exploreVideosBtn = document.getElementById("explore-videos-btn");
+
+  if (explorePostsBtn) {
+    explorePostsBtn.addEventListener("click", () => {
+      renderPostIndex(1);
+    });
+  }
+
+  if (exploreVideosBtn) {
+    exploreVideosBtn.addEventListener("click", () => {
+      const videoSection = document.getElementById("video-carousel-section");
+      if (videoSection) {
+        videoSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  }
+}
+
 function injectEmbedScripts() {
   const fbScript = document.createElement("script");
   fbScript.async = true;
@@ -687,12 +766,10 @@ function injectEmbedScripts() {
   document.body.appendChild(fbScript);
 }
 
-
-/* ---- 9. Masthead: sticky + shrinks into a clean compact bar once the
-   page is scrolled a little ---- */
 const masthead = document.querySelector(".masthead");
 
 function updateMastheadCompact() {
+  if (!masthead) return;
   const isCompact = masthead.classList.contains("is-compact");
   if (!isCompact && window.scrollY > 70) {
     masthead.classList.add("is-compact");
@@ -714,8 +791,6 @@ window.addEventListener("scroll", () => {
 
 updateMastheadCompact();
 
-
-/* ---- 10. Navigation: Posts link takes to paginated view ---- */
 const navPostsLink = document.getElementById("nav-posts-link");
 if (navPostsLink) {
   navPostsLink.addEventListener("click", (e) => {
@@ -735,8 +810,6 @@ if (navContactLink) {
   });
 }
 
-
-/* ---- 11. Misc + load content ---- */
 document.getElementById("year").textContent = new Date().getFullYear();
 
 async function init() {
@@ -750,6 +823,7 @@ async function init() {
   ads = adsData || fallbackAds;
 
   renderPostList();
+  setupHomeButtons();
   showMainAd(0);
 
   applySocialConfig(socialData || fallbackSocial);
