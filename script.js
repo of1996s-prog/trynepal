@@ -6,7 +6,7 @@
 
    CONTENT LIVES IN JSON (so Decap CMS can edit it):
      - content/posts.json  -> your posts (title, image, body text, date)
-     - content/ads.json    -> your 4 post-ads + rotating sidebar ads
+     - content/ads.json    -> your 4 post-ads + rotating sidebar ads (image or YouTube)
      - content/social.json -> youtube/facebook/tiktok embed links (flexible count)
    Edit those directly, or through the /admin panel once Decap CMS's
    one-time GitHub OAuth setup is done (see admin/config.yml).
@@ -37,7 +37,7 @@ const fallbackPosts = [
     title: "Content is loading…",
     image: "",
     date: "",
-    body: "If you're seeing this on the live site, content/posts.json failed to load - try a hard refresh. If you're testing locally by double-clicking index.html, that's expected: run a local server instead (see README.md) to see your real posts."
+    body: "If you're seeing this on the live site, content/posts.json failed to load - try a hard refresh. If you're testing locally by double-clicking index.html, that's expected: run a local server."
   }
 ];
 
@@ -89,7 +89,7 @@ function formatDate(dateString) {
   }
 }
 
-/* ---- 1. Post-ad helpers: Using placeholders instead of image paths ---- */
+/* ---- 1. Ad helpers: Support both image and YouTube video ads ---- */
 function advertiseWithUsHtml() {
   return `<div class="advertise-with-us">
              <p>Advertise with us</p>
@@ -97,14 +97,79 @@ function advertiseWithUsHtml() {
            </div>`;
 }
 
-function buildAdHtml(src, label, slotId) {
-  if (!src) {
+function normalizeAdObject(item, fallbackLabel) {
+  if (!item) return null;
+
+  if (typeof item === "string") {
+    return {
+      type: "image",
+      src: item,
+      title: "",
+      description: "",
+      label: fallbackLabel
+    };
+  }
+
+  if (typeof item === "object") {
+    if (item.type === "youtube") {
+      return {
+        type: "youtube",
+        videoId: item.videoId || "",
+        title: item.title || "Featured video",
+        description: item.description || "",
+        label: ""
+      };
+    }
+
+    return {
+      type: "image",
+      src: item.src || item.image || "",
+      title: item.title || "",
+      description: item.description || "",
+      label: item.label || fallbackLabel
+    };
+  }
+
+  return null;
+}
+
+function buildAdHtml(adData, slotId) {
+  const ad = normalizeAdObject(adData, "Sponsored");
+
+  if (!ad || (!ad.src && ad.type !== "youtube")) {
     return `<div class="post-ad" id="${slotId}">${advertiseWithUsHtml()}</div>`;
   }
+
+  if (ad.type === "youtube") {
+    const videoId = ad.videoId || "";
+    const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : "";
+    const title = sanitizeHtml(ad.title || "Featured video");
+    const description = sanitizeHtml(ad.description || "");
+
+    if (!embedUrl) {
+      return `<div class="post-ad" id="${slotId}">${advertiseWithUsHtml()}</div>`;
+    }
+
+    return `<div class="post-ad post-ad-video" id="${slotId}">
+      <div class="post-ad-video-frame">
+        <iframe
+          src="${embedUrl}"
+          title="${title}"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      </div>
+      <div class="post-ad-copy">
+        <h4>${title}</h4>
+        ${description ? `<p>${description}</p>` : ""}
+      </div>
+    </div>`;
+  }
+
   return `<div class="post-ad" id="${slotId}">
-             <span class="post-ad-label">Sponsored</span>
-             <img class="lazy-img" data-src="${sanitizeHtml(src)}" alt="${sanitizeHtml(label)}">
-           </div>`;
+    <span class="post-ad-label">${ad.label}</span>
+    <img class="lazy-img" data-src="${sanitizeHtml(ad.src)}" alt="${sanitizeHtml(ad.title || "Advertisement")}">
+  </div>`;
 }
 
 function attachAdErrorFallback(imgEl, containerEl) {
@@ -189,13 +254,13 @@ function loadPost(index) {
     html += `<img data-src="${sanitizeHtml(post.image)}" alt="${sanitizeHtml(post.title)}" class="lazy-img">`;
   }
 
-  html += buildAdHtml(ads.postAd1, "Advertisement 1", "post-ad-slot-1");
+  html += buildAdHtml(ads.postAd1, "post-ad-slot-1");
   html += part1.join("");
-  html += buildAdHtml(ads.postAd2, "Advertisement 2", "post-ad-slot-2");
+  html += buildAdHtml(ads.postAd2, "post-ad-slot-2");
   html += part2.join("");
-  html += buildAdHtml(ads.postAd3, "Advertisement 3", "post-ad-slot-3");
+  html += buildAdHtml(ads.postAd3, "post-ad-slot-3");
   html += part3.join("");
-  html += buildAdHtml(ads.postAd4, "Advertisement 4", "post-ad-slot-4");
+  html += buildAdHtml(ads.postAd4, "post-ad-slot-4");
   html += `</article>`;
 
   contentEl.innerHTML = html;
@@ -392,13 +457,58 @@ tabButtons.forEach((btn) => {
 
 
 /* ---- 6. Sponsored (main) ad rotation as the visitor scrolls the page ---- */
-const mainAdImg = document.getElementById("main-ad-img");
-const adPlaceholderEl = mainAdImg ? mainAdImg.parentElement : null;
+const adPlaceholderEl = document.querySelector(".ad-placeholder");
 let currentMainAdIndex = -1;
-let mainAdErrorBound = false;
 
 function showAdvertiseWithUsInSidebar() {
   if (adPlaceholderEl) adPlaceholderEl.innerHTML = advertiseWithUsHtml();
+}
+
+function renderSidebarAd(ad) {
+  if (!adPlaceholderEl) return;
+
+  if (ad.type === "youtube") {
+    const videoId = ad.videoId || "";
+    const title = sanitizeHtml(ad.title || "Featured video");
+    const description = sanitizeHtml(ad.description || "");
+
+    if (!videoId) {
+      showAdvertiseWithUsInSidebar();
+      return;
+    }
+
+    adPlaceholderEl.innerHTML = `
+      <div class="main-ad-video">
+        <div class="main-ad-video-frame">
+          <iframe
+            src="https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1"
+            title="${title}"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          ></iframe>
+        </div>
+        <div class="main-ad-video-copy">
+          <h4>${title}</h4>
+          ${description ? `<p>${description}</p>` : ""}
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (ad.type === "image" && ad.src) {
+    adPlaceholderEl.innerHTML = `
+      <img
+        class="lazy-img"
+        alt="${sanitizeHtml(ad.title || "Advertisement")}"
+        data-src="${sanitizeHtml(ad.src)}"
+      >
+    `;
+    applyImageLoadingPreference();
+    return;
+  }
+
+  showAdvertiseWithUsInSidebar();
 }
 
 function showMainAd(index) {
@@ -406,15 +516,17 @@ function showMainAd(index) {
     showAdvertiseWithUsInSidebar();
     return;
   }
+
+  const ad = normalizeAdObject(ads.mainAds[index], "Sponsored");
+  if (!ad) {
+    showAdvertiseWithUsInSidebar();
+    return;
+  }
+
   if (index === currentMainAdIndex) return;
   currentMainAdIndex = index;
-  mainAdImg.setAttribute("data-src", ads.mainAds[index]);
-  applyImageLoadingPreference();
-
-  if (!mainAdErrorBound) {
-    mainAdErrorBound = true;
-    mainAdImg.addEventListener("error", showAdvertiseWithUsInSidebar);
-  }
+  
+  renderSidebarAd(ad);
 }
 
 function updateMainAdOnScroll() {
