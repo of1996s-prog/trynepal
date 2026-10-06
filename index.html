@@ -3,19 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://connect.facebook.net https://www.youtube.com; style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; frame-src https://www.youtube.com https://www.facebook.com https://www.tiktok.com; img-src 'self' data: https:; connect-src 'self'">
-  <title>My Website — a personal journal</title>
-  <meta name="description" content="A personal journal — posts, favorite media, and where to find me elsewhere.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://connect.facebook.net https://www.youtube.com https://www.facebook.com https://www.facebook.net; style-src 'self' https://fonts.googleapis.com https://cdnjs.cloudflare.com 'unsafe-inline'; img-src 'self' data: https:; frame-src 'self' https://www.youtube.com https://www.facebook.com https://www.facebook.net https://x.com; connect-src 'self' https:; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com;">
+  <title>Herne Katha — Social Storytelling</title>
+  <meta name="description" content="Stories, voices, and moments from Herne Katha across platforms.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&family=SF+Pro+Text:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa3IW2lEnf3lGY6i7IjLxa97keshcUj8YsxjUc4MdRNQdvJ+gNaf7efDLcKV1mnnersvmjztKsksZs4Xw5g==" crossorigin="anonymous" referrerpolicy="no-referrer">
-
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa3IW2lEnf3lGY6i7IjLxa97keshcUj8YsxjUc4MdRNQdvJ+gNaf7efDLcKV1mnnersvm" crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
   <a class="skip-link" href="#main">Skip to content</a>
 
   <section class="featured" aria-label="Featured media">
@@ -32,10 +30,7 @@
         </iframe>
       </div>
       <figure class="featured-banner">
-        <img
-          src="https://placehold.co/1600x700/23201a/f5efe1?text=Your+Banner+Image"
-          alt="Site banner"
-          id="banner-img">
+        <img src="https://placehold.co/1600x700/23201a/f5efe1?text=Herne+Katha" alt="Herne Katha banner" id="banner-img">
       </figure>
       <div class="featured-embed" id="featured-facebook">
         <div class="fb-page"
@@ -54,10 +49,10 @@
   <header class="masthead">
     <div class="masthead-top">
       <div class="masthead-titles">
-        <p class="kicker">A personal journal</p>
-        <h1 class="site-title">My Website</h1>
+        <p class="kicker">Stories in motion</p>
+        <h1 class="site-title">Herne Katha</h1>
       </div>
-      <nav class="site-nav">
+      <nav class="site-nav" aria-label="Main navigation">
         <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
@@ -84,7 +79,6 @@
   </header>
 
   <main id="main" class="layout">
-
     <aside class="rail-contents" aria-label="Posts">
       <p class="rail-label">Posts</p>
       <ol id="post-list-items"></ol>
@@ -94,7 +88,7 @@
     <article class="column-article" id="content">
       <div class="homepage-hero">
         <h2>Welcome</h2>
-        <p class="hero-subtitle">Discover stories, insights, and moments from my world</p>
+        <p class="hero-subtitle">Stories, voices, and moments from Herne Katha across platforms</p>
         <div class="hero-cta">
           <button class="btn-primary" id="explore-posts-btn">Explore Posts</button>
           <button class="btn-secondary" id="explore-videos-btn">Watch Videos</button>
@@ -103,31 +97,32 @@
 
       <section class="video-feed" id="video-feed-section">
         <h3>Featured Videos</h3>
-        <div class="video-feed-container" id="video-feed-container">
-          <!-- Videos loaded here with infinite scroll -->
-        </div>
+        <div class="video-feed-container" id="video-feed-container"></div>
       </section>
     </article>
 
     <aside class="rail-sponsor" aria-label="Sponsor">
       <p class="rail-label">Sponsored</p>
-      <div class="ad-placeholder" id="ad-placeholder">
-        <!-- Ad content loads here with smooth transition -->
-      </div>
+      <div class="ad-placeholder" id="ad-placeholder"></div>
     </aside>
   </main>
 
   <section class="elsewhere" id="elsewhere">
     <p class="section-kicker">Elsewhere</p>
-    <h2>Find me on</h2>
-    <div class="tabs" role="tablist">
+    <h2>Follow the story</h2>
+    <div class="tabs" role="tablist" aria-label="Social media channels">
       <button class="tab-btn active" data-tab="facebook">Facebook</button>
       <button class="tab-btn" data-tab="youtube">YouTube</button>
       <button class="tab-btn" data-tab="tiktok">TikTok</button>
+      <button class="tab-btn" data-tab="instagram">Instagram</button>
+      <button class="tab-btn" data-tab="x">X</button>
     </div>
+
     <div class="tab-panel active" id="panel-facebook"></div>
     <div class="tab-panel" id="panel-youtube"></div>
     <div class="tab-panel" id="panel-tiktok"></div>
+    <div class="tab-panel" id="panel-instagram"></div>
+    <div class="tab-panel" id="panel-x"></div>
   </section>
 
   <footer class="colophon" id="contact">
@@ -139,11 +134,10 @@
       <a id="footer-x" href="#" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i> X</a>
       <a id="footer-email" href="#"><i class="fas fa-envelope"></i> Email</a>
     </div>
-    <p class="colophon-copy">&copy; <span id="year"></span> My Website — written, edited, and published by hand.</p>
+    <p class="colophon-copy">&copy; <span id="year"></span> Herne Katha — written, edited, and published by hand.</p>
   </footer>
 
   <div id="fb-root"></div>
-
   <script src="script.js"></script>
 </body>
 </html>
