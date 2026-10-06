@@ -4,8 +4,19 @@
   "postAd3": "advertisement/postadv3rd.jpg",
   "postAd4": "advertisement/postadv4th.jpg",
   "mainAds": [
-    "advertisement/mainadv1.jpg",
-    "<h1>namaste</h1>",
-    ""
+    {
+      "type": "image",
+      "src": "advertisement/mainadv1.jpg"
+    },
+    {
+      "type": "youtube",
+      "videoId": "hws97JEXYX8",
+      "title": "Amazing Nepal",
+      "description": "Discover the beauty and culture of Nepal"
+    },
+    {
+      "type": "image",
+      "src": "advertisement/mainadv2.jpg"
+    }
   ]
 }
