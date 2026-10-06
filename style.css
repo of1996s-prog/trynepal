@@ -230,6 +230,12 @@ input:focus-visible {
   overflow: hidden;
   min-height: 210px;
   display: flex;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.featured-embed:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .featured-embed iframe {
@@ -250,12 +256,18 @@ input:focus-visible {
   border-radius: 4px;
   overflow: hidden;
   min-height: 210px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .featured-banner img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.featured-banner:hover img {
+  transform: scale(1.02);
 }
 
 /* Rotating "follow us" link, now inline in the nav bar - understated,
@@ -323,6 +335,195 @@ input:focus-visible {
   margin: 1.25rem 0;
 }
 
+/* =========================================================================
+   HOMEPAGE HERO SECTION
+========================================================================= */
+.homepage-hero {
+  margin-bottom: 2.5rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(156, 61, 30, 0.05) 0%, rgba(75, 93, 58, 0.05) 100%);
+  border-radius: 12px;
+  border-left: 4px solid var(--rust);
+}
+
+.homepage-hero h2 {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  margin-top: 0;
+  color: var(--ink);
+}
+
+.hero-subtitle {
+  font-size: 1.2rem;
+  color: var(--brass);
+  margin: 0.5rem 0 1.5rem;
+  font-weight: 500;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-primary {
+  background: var(--rust);
+  color: white;
+  box-shadow: 0 2px 8px rgba(156, 61, 30, 0.2);
+}
+
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  background: #8a2f18;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(156, 61, 30, 0.3);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--rust);
+  border: 2px solid var(--rust);
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
+  background: var(--rust);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* =========================================================================
+   VIDEO CAROUSEL (Apple.com style)
+========================================================================= */
+.video-carousel {
+  margin: 3rem 0;
+}
+
+.video-carousel h3 {
+  font-size: 1.6rem;
+  margin-bottom: 1.5rem;
+}
+
+.carousel-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.carousel-wrapper {
+  flex: 1;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--ink);
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.carousel-video-item {
+  flex: 0 0 100%;
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carousel-video-item iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.carousel-nav {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--rule);
+  font-size: 24px;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.carousel-nav:hover {
+  background: var(--rust);
+  color: white;
+  border-color: var(--rust);
+  transform: scale(1.1);
+}
+
+.carousel-nav:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: scale(1);
+}
+
+.carousel-dots {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.carousel-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--rule);
+  border: 2px solid var(--rule);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.carousel-dot.active {
+  background: var(--rust);
+  border-color: var(--rust);
+  width: 28px;
+  border-radius: 5px;
+}
+
+.carousel-dot:hover {
+  background: var(--moss);
+  border-color: var(--moss);
+}
+
+@media (max-width: 700px) {
+  .carousel-nav {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+  
+  .carousel-video-item {
+    min-height: 250px;
+  }
+}
+
+/* =========================================================================
+   POST DISPLAY STYLES
+========================================================================= */
 .post-date {
   font-family: var(--font-mono);
   font-size: 0.85rem;
@@ -334,14 +535,25 @@ input:focus-visible {
   width: 100%;
 }
 
-/* Post ads: a quiet horizontal strip inside the article, framed by
-   hairline rules so it reads as a printed "sponsored" break */
+/* Post ads: improved styling with better error handling */
 .post-ad {
-  margin: 1.1rem 0;
-  padding: 0.6rem 0;
-  border-top: 1px solid var(--rule);
-  border-bottom: 1px solid var(--rule);
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(245, 239, 225, 0.5) 0%, rgba(237, 228, 207, 0.5) 100%);
   text-align: center;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.post-ad:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: var(--brass);
 }
 
 .post-ad-label {
@@ -351,13 +563,16 @@ input:focus-visible {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--brass);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
+  font-weight: 600;
 }
 
 .post-ad img {
   margin: 0 auto;
   max-height: 220px;
+  max-width: 100%;
   object-fit: contain;
+  border-radius: 4px;
 }
 
 /* =========================================================================
@@ -379,11 +594,12 @@ input:focus-visible {
   flex-direction: column;
   height: 100%;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .post-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-6px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
 }
 
 .post-card-image {
@@ -397,6 +613,11 @@ input:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.post-card:hover .post-card-image img {
+  transform: scale(1.05);
 }
 
 .post-card-image .no-image {
@@ -431,11 +652,12 @@ input:focus-visible {
   border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .post-card .read-more:hover {
   background: var(--ink);
+  transform: translateY(-2px);
 }
 
 /* =========================================================================
@@ -480,13 +702,19 @@ input:focus-visible {
   text-align: left;
   background: none;
   border: none;
-  padding: 0;
+  padding: 0.5rem;
   cursor: pointer;
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 0.92rem;
   line-height: 1.35;
   width: 100%;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+#post-list-items button:hover {
+  background: rgba(156, 61, 30, 0.08);
 }
 
 #post-list-items .num {
@@ -524,10 +752,12 @@ input:focus-visible {
   letter-spacing: 0.04em;
   color: var(--rust);
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .see-more-link:hover {
   text-decoration: underline;
+  padding-left: 0.25rem;
 }
 
 /* ---- Paginated "all posts" index, shown in the main content area ---- */
@@ -555,30 +785,42 @@ input:focus-visible {
   font-size: 0.85rem;
   cursor: pointer;
   color: var(--ink);
+  transition: all 0.15s ease;
 }
 
 .post-index-pagination button.active {
   border-color: var(--rust);
   color: var(--rust);
   font-weight: 600;
+  background: rgba(156, 61, 30, 0.08);
 }
 
 .post-index-pagination button:hover {
   border-color: var(--rust);
+  background: rgba(156, 61, 30, 0.05);
 }
 
+/* =========================================================================
+   ADVERTISEMENT PLACEHOLDER — Enhanced with better error handling
+========================================================================= */
 .ad-placeholder {
   margin-top: 0.75rem;
   min-height: 300px;
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
-  background: var(--paper-deep);
+  background: linear-gradient(135deg, var(--paper) 0%, var(--paper-deep) 100%);
+  border: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .ad-placeholder img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .advertise-with-us {
@@ -587,7 +829,7 @@ input:focus-visible {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem;
+  padding: 1.5rem;
   text-align: center;
   color: #8a7f68;
   box-sizing: border-box;
@@ -601,8 +843,8 @@ input:focus-visible {
 .post-ad .advertise-with-us {
   flex-direction: row;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0;
+  gap: 0.75rem;
+  padding: 0.5rem;
 }
 
 .post-ad .advertise-with-us p {
@@ -612,10 +854,11 @@ input:focus-visible {
 
 .post-ad .advertise-with-us a {
   font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .advertise-with-us p {
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.6rem;
   font-weight: 600;
   color: var(--ink);
   font-size: 0.95rem;
@@ -623,6 +866,15 @@ input:focus-visible {
 
 .advertise-with-us a {
   font-size: 0.85rem;
+  color: var(--rust);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rust);
+  transition: all 0.15s ease;
+}
+
+.advertise-with-us a:hover {
+  color: var(--ink);
+  border-color: var(--ink);
 }
 
 @media (max-width: 900px) {
@@ -675,11 +927,16 @@ input:focus-visible {
   letter-spacing: 0.06em;
   color: #8a7f68;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .tab-btn.active {
   color: var(--rust);
   border-color: var(--rust);
+}
+
+.tab-btn:hover {
+  color: var(--ink);
 }
 
 .tab-panel {
@@ -706,6 +963,13 @@ input:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.social-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .social-item iframe {
@@ -874,7 +1138,7 @@ input:focus-visible {
   padding: 0.4rem 0.8rem;
   border: 1px solid rgba(245, 239, 225, 0.25);
   border-radius: 999px;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .colophon-social a:hover {
@@ -914,6 +1178,7 @@ input:focus-visible {
     gap: 0.75rem;
     z-index: 20;
     min-width: 200px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
   #nav-links.open {
@@ -926,5 +1191,24 @@ input:focus-visible {
 
   .post-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .hero-cta {
+    flex-direction: column;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+  }
+  
+  .carousel-container {
+    gap: 0.75rem;
+  }
+  
+  .carousel-nav {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
   }
 }
