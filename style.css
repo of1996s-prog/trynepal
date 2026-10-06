@@ -65,8 +65,10 @@ h1, h2, h3, h4 {
 }
 
 .masthead {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 50;
   backdrop-filter: blur(18px);
   background: rgba(245, 245, 247, 0.75);
@@ -149,6 +151,7 @@ h1, h2, h3, h4 {
   max-width: var(--content-max);
   margin: 2.4rem auto 1.5rem;
   padding: 0 clamp(1rem, 3vw, 2.6rem);
+  margin-top: calc(2.4rem + var(--sticky-header-height));
 }
 
 .featured-row {
