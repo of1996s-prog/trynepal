@@ -1,24 +1,35 @@
 {
-  "youtubeChannelId": "UCKvk5bVH6_LoNNs-aYSFxFQ",
+  "youtubeChannelId": "hernekatha",
   "youtubeFeaturedVideoId": "s5-NQwBsc0s",
   "youtubeVideos": [
     "s5-NQwBsc0s",
     "dQw4w9WgXcQ",
-    "jNQXAC9IVRw"
+    "jNQXAC9IVRw",
+    "M7lc1UVf-VE"
   ],
-  "facebookUsername": "Nepal",
-  "tiktokUsername": "Nepal",
-  "instagramUsername": "Nepal",
-  "xUsername": "Nepal",
-  "email": "info@eNepal.gov.np",
+  "facebookUsername": "hernekatha",
+  "tiktokUsername": "hernekatha",
+  "instagramUsername": "hernekatha",
+  "xUsername": "hernekatha",
+  "email": "",
   "facebookPosts": [
-    "https://www.facebook.com/plugins/post.php?href=FACEBOOK_POST_URL_1&show_text=true&width=500",
-    "https://www.facebook.com/plugins/post.php?href=FACEBOOK_POST_URL_2&show_text=true&width=500",
-    "https://www.facebook.com/plugins/post.php?href=FACEBOOK_POST_URL_3&show_text=true&width=500"
+    "https://www.facebook.com/hernekatha",
+    "https://www.facebook.com/hernekatha",
+    "https://www.facebook.com/hernekatha"
   ],
   "tiktokVideos": [
-    "https://www.tiktok.com/@Nepal/video/1234567890123456789",
-    "https://www.tiktok.com/@Nepal/video/1234567890123456790",
-    "https://www.tiktok.com/@Nepal/video/1234567890123456791"
+    "https://www.tiktok.com/@hernekatha",
+    "https://www.tiktok.com/@hernekatha",
+    "https://www.tiktok.com/@hernekatha"
+  ],
+  "instagramReels": [
+    "https://www.instagram.com/hernekatha/",
+    "https://www.instagram.com/hernekatha/",
+    "https://www.instagram.com/hernekatha/"
+  ],
+  "xPosts": [
+    "https://x.com/hernekatha",
+    "https://x.com/hernekatha",
+    "https://x.com/hernekatha"
   ]
 }

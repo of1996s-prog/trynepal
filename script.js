@@ -1,726 +1,929 @@
-/* =========================================================================
-   TryNepal site logic
-   - Homepage uses a continuous video feed
-   - Post content loads only when clicked
-   - Sidebar ad rotates smoothly with scroll and transitions
-========================================================================= */
+:root {
+  --paper: #f5f5f7;
+  --paper-elevated: #ffffff;
+  --paper-soft: #efeff3;
+  --ink: #1d1d1f;
+  --ink-soft: #4d4d52;
+  --muted: #6e6e73;
+  --line: rgba(29, 29, 31, 0.12);
+  --card: rgba(255, 255, 255, 0.85);
+  --brand: #0a84ff;
+  --brand-strong: #0066cc;
+  --shadow: rgba(15, 23, 42, 0.08);
+  --content-max: 1280px;
+  --sticky-header-height: 5.4rem;
+  --radius-xl: 28px;
+  --radius-lg: 22px;
+  --radius-md: 16px;
+}
 
-const fallbackPosts = [{
-  title: "Content is loading…",
-  image: "",
-  date: "",
-  body: "If you're seeing this on the live site, content/posts.json failed to load. Try refreshing the page."
-}];
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #f5f5f7 0%, #f9f9f9 100%);
+  color: var(--ink);
+  font-family: "SF Pro Text", "Segoe UI", sans-serif;
+  line-height: 1.6;
+  letter-spacing: -0.02em;
+}
 
-const fallbackAds = {
-  postAd1: "",
-  postAd2: "",
-  postAd3: "",
-  postAd4: "",
-  mainAds: []
-};
+img {
+  max-width: 100%;
+  display: block;
+}
 
-const fallbackSocial = {
-  youtubeChannelId: "",
-  youtubeFeaturedVideoId: "",
-  facebookUsername: "",
-  tiktokUsername: "",
-  instagramUsername: "",
-  xUsername: "",
-  email: "",
-  youtubeVideos: [],
-  facebookPosts: [],
-  tiktokVideos: []
-};
+a { color: var(--brand); }
 
-const postListEl = document.getElementById("post-list-items");
-const contentEl = document.getElementById("content");
-const adPlaceholderEl = document.getElementById("ad-placeholder");
+h1, h2, h3, h4 {
+  margin: 0 0 0.55em;
+  line-height: 1.08;
+  letter-spacing: -0.06em;
+  font-family: "SF Pro Display", "Segoe UI", sans-serif;
+}
 
-let posts = [];
-let ads = fallbackAds;
-let currentMainAdIndex = -1;
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  z-index: 1000;
+  background: #000;
+  color: #fff;
+  padding: 0.72rem 1rem;
+}
+.skip-link:focus { left: 0.75rem; top: 0.75rem; }
 
-async function fetchJson(path, fallback) {
-  try {
-    const res = await fetch(path, { cache: "no-store" });
-    if (!res.ok) throw new Error("bad response");
-    return await res.json();
-  } catch (err) {
-    console.warn(`Could not load ${path}; using fallback content.`, err);
-    return fallback;
+.section-kicker,
+.rail-label,
+.kicker {
+  margin: 0 0 0.6rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: "SF Mono", "Consolas", monospace;
+}
+
+.masthead {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  backdrop-filter: blur(18px);
+  background: rgba(245, 245, 247, 0.75);
+  border-bottom: 1px solid var(--line);
+  padding: 1rem clamp(1rem, 3vw, 2.6rem);
+}
+
+.masthead-top {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.site-title {
+  margin: 0;
+  font-size: clamp(2rem, 3vw, 2.9rem);
+  letter-spacing: -0.08em;
+}
+
+.masthead.is-compact { padding: 0.62rem clamp(1rem, 3vw, 2.6rem); }
+.masthead.is-compact .kicker { display: none; }
+.masthead.is-compact .site-title { font-size: 1.45rem; }
+
+.site-nav ul {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  margin: 0;
+  padding: 0;
+}
+
+.site-nav a {
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+.site-nav a:hover { opacity: 0.75; }
+
+.data-saver label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+  font-family: "SF Mono", "Consolas", monospace;
+}
+
+.nav-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  padding: 0.2rem;
+  cursor: pointer;
+}
+.nav-toggle span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--ink);
+  border-radius: 999px;
+  margin: 4px 0;
+}
+
+.ticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  white-space: nowrap;
+  font-family: "SF Mono", "Consolas", monospace;
+  font-size: 0.72rem;
+}
+
+.featured {
+  max-width: var(--content-max);
+  margin: 2.4rem auto 1.5rem;
+  padding: 0 clamp(1rem, 3vw, 2.6rem);
+  margin-top: calc(2.4rem + var(--sticky-header-height));
+}
+
+.featured-row {
+  display: grid;
+  grid-template-columns: 1.15fr 1.7fr 1.05fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.featured-embed,
+.featured-banner {
+  min-height: 240px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--paper-elevated);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.04);
+}
+
+.featured-embed iframe,
+.featured-banner img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: none;
+  object-fit: cover;
+}
+
+#main,
+#content,
+#contact,
+#elsewhere {
+  scroll-margin-top: calc(var(--sticky-header-height) + 1rem);
+}
+
+.layout {
+  max-width: var(--content-max);
+  margin: 0 auto 3rem;
+  padding: 0 clamp(1rem, 3vw, 2.6rem);
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 270px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.rail-contents,
+.rail-sponsor {
+  position: sticky;
+  top: calc(var(--sticky-header-height) + 1rem);
+}
+
+.rail-contents {
+  padding-right: 0.8rem;
+  border-right: 1px solid var(--line);
+}
+
+.rail-sponsor {
+  padding-left: 0.8rem;
+  border-left: 1px solid var(--line);
+}
+
+#post-list-items {
+  list-style: none;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  max-height: 450px;
+  overflow-y: auto;
+}
+
+#post-list-items li + li { margin-top: 0.4rem; }
+
+#post-list-items button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 0.7rem 0.75rem;
+  cursor: pointer;
+  color: var(--ink);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+#post-list-items button:hover {
+  border-color: var(--line);
+  background: rgba(255,255,255,0.52);
+}
+
+#post-list-items .num,
+#post-list-items .date {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: "SF Mono", "Consolas", monospace;
+}
+
+#post-list-items .title {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.96rem;
+  line-height: 1.35;
+}
+
+.see-more-link {
+  margin-top: 0.9rem;
+  background: transparent;
+  border: none;
+  color: var(--brand);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: "SF Mono", "Consolas", monospace;
+}
+
+.column-article {
+  max-width: 820px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.homepage-hero {
+  background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(248,248,250,0.98));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  padding: clamp(1.5rem, 3vw, 3rem);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.04);
+  margin-bottom: 1.6rem;
+}
+
+.homepage-hero h2 {
+  font-size: clamp(2.4rem, 4vw, 4.2rem);
+  margin-bottom: 0.3rem;
+}
+
+.hero-subtitle {
+  margin: 0 0 1.4rem;
+  color: var(--muted);
+  font-size: 1.08rem;
+}
+
+.hero-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.9rem 1.35rem;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+}
+.btn-primary:hover,
+.btn-secondary:hover { transform: translateY(-1px); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--brand), var(--brand-strong));
+  color: #fff;
+  border: none;
+  box-shadow: 0 18px 28px rgba(10,132,255,0.18);
+}
+
+.btn-secondary {
+  background: rgba(255,255,255,0.7);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.video-feed {
+  margin-top: 1rem;
+}
+
+.video-feed h3 {
+  font-size: clamp(1.7rem, 2.7vw, 2.4rem);
+  margin-bottom: 1rem;
+}
+
+.video-feed-container {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.video-feed-item {
+  background: rgba(255,255,255,0.7);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 12px 34px rgba(0,0,0,0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.video-feed-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 38px rgba(0,0,0,0.06);
+}
+
+.video-feed-item iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  background: #000;
+}
+
+.video-feed-copy {
+  padding: 1rem 1.1rem 1.2rem;
+}
+
+.video-feed-copy .video-label {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.69rem;
+  font-family: "SF Mono", "Consolas", monospace;
+}
+
+.video-feed-copy h4 {
+  font-size: clamp(1.2rem, 2vw, 1.7rem);
+  margin-bottom: 0.2rem;
+}
+
+.video-feed-copy p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.97rem;
+}
+
+.ad-placeholder {
+  position: relative;
+  min-height: 560px;
+  width: 100%;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, rgba(255,255,255,0.75), rgba(239,239,243,0.96));
+  border: 1px solid var(--line);
+  overflow: hidden;
+  box-shadow: 0 14px 30px rgba(0,0,0,0.04);
+}
+
+.ad-placeholder-inner {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: translateY(14px) scale(0.99);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  background: rgba(255,255,255,0.3);
+}
+
+.ad-placeholder.is-visible .ad-placeholder-inner {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.ad-placeholder-inner img,
+.ad-placeholder-inner iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.ad-placeholder-inner img {
+  object-fit: cover;
+}
+
+.ad-placeholder-copy {
+  padding: 1rem 1rem 1.2rem;
+  background: rgba(255,255,255,0.82);
+}
+
+.ad-placeholder-copy h4 {
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.ad-placeholder-copy p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+
+.advertise-with-us {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 1.2rem;
+  gap: 0.6rem;
+}
+
+.advertise-with-us p {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.advertise-with-us a {
+  color: var(--brand);
+  text-decoration: none;
+}
+
+.post-article {
+  background: rgba(255,255,255,0.7);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  padding: clamp(1.2rem, 3vw, 2rem);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.04);
+}
+
+.post-article h2 {
+  font-size: clamp(2rem, 3vw, 3rem);
+}
+
+.post-date,
+.post-index-meta {
+  display: block;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-family: "SF Mono", "Consolas", monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.post-article p {
+  font-size: 1.02rem;
+  color: #2d2d31;
+}
+
+.post-ad {
+  margin: 1.5rem 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: rgba(255,255,255,0.82);
+}
+
+.post-ad-label {
+  display: block;
+  padding: 0.7rem 1rem 0.2rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-family: "SF Mono", "Consolas", monospace;
+}
+
+.post-ad img,
+.post-ad iframe {
+  display: block;
+  width: 100%;
+  border: none;
+}
+
+.post-ad-copy {
+  padding: 1rem 1.1rem 1.2rem;
+}
+
+.post-ad-copy h4 {
+  margin-bottom: 0.25rem;
+  font-size: 1.1rem;
+}
+
+.post-ad-copy p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.94rem;
+}
+
+.elsewhere {
+  max-width: var(--content-max);
+  margin: 2rem auto 0;
+  padding: 0 clamp(1rem, 3vw, 2.6rem) 3rem;
+}
+
+.elsewhere h2 {
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin: 1rem 0 1.3rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab-btn {
+  border: none;
+  background: transparent;
+  padding: 0.8rem 0.2rem 0.65rem;
+  font-family: "SF Mono", "Consolas", monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  font-size: 0.68rem;
+}
+
+.tab-btn.active {
+  color: var(--brand);
+  border-color: var(--brand);
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+.social-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.social-item {
+  min-height: 250px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.social-item iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+.facebook-item,
+.tiktok-item,
+.instagram-item,
+.x-item {
+  background: rgba(255,255,255,0.8);
+  border: 1px solid var(--line);
+}
+
+.social-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  height: 100%;
+  text-decoration: none;
+  color: var(--ink);
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+
+.social-card i {
+  font-size: 2.2rem;
+  color: var(--brand);
+}
+
+.social-card strong {
+  font-size: 1.05rem;
+}
+
+.social-card span {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: "SF Mono", "Consolas", monospace;
+}
+
+.colophon {
+  background: #111214;
+  color: rgba(255,255,255,0.8);
+  padding: 2rem clamp(1rem, 3vw, 2.6rem) 3rem;
+}
+
+.colophon-social {
+  max-width: var(--content-max);
+  margin: 0 auto 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem;
+}
+
+.colophon-social a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.78rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  color: white;
+  text-decoration: none;
+}
+
+.colophon-copy {
+  margin: 0;
+  text-align: center;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.78rem;
+  font-family: "SF Mono", "Consolas", monospace;
+}
+
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .rail-contents,
+  .rail-sponsor {
+    position: static;
+    padding: 0;
+    border: none;
+  }
+  .featured-row {
+    grid-template-columns: 1fr;
   }
 }
 
-function sanitizeHtml(value) {
-  const div = document.createElement("div");
-  div.textContent = String(value ?? "");
-  return div.innerHTML;
-}
-
-function formatDate(dateString) {
-  if (!dateString) return "";
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  } catch {
-    return "";
+@media (max-width: 700px) {
+  .nav-toggle { display: inline-block; }
+  .site-nav ul {
+    display: none;
+    position: absolute;
+    top: calc(100% + 0.6rem);
+    right: 1rem;
+    background: rgba(255,255,255,0.95);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    box-shadow: 0 22px 36px rgba(0,0,0,0.08);
   }
+  #nav-links.open { display: flex; }
+  .hero-cta { flex-direction: column; }
+  .btn-primary, .btn-secondary { width: 100%; }
+  .ad-placeholder { min-height: 430px; }
 }
 
-function extractYouTubeEmbedUrl(value) {
-  if (!value || typeof value !== "string") return "";
-  const cleaned = value.trim();
-  if (!cleaned) return "";
-
-  if (/^[A-Za-z0-9_-]{11}$/.test(cleaned)) {
-    return `https://www.youtube.com/embed/${cleaned}?rel=0&modestbranding=1`;
-  }
-
-  try {
-    const url = new URL(cleaned);
-    const host = url.hostname.toLowerCase();
-
-    if (host.includes("youtube.com")) {
-      const videoId = url.searchParams.get("v");
-      if (videoId) return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
-
-      const path = url.pathname || "";
-      if (path.includes("/embed/")) return `${cleaned.includes("?") ? cleaned : cleaned + "?rel=0&modestbranding=1"}`;
-      if (path.includes("/shorts/")) {
-        const id = path.split("/shorts/")[1]?.split("/")[0];
-        if (id) return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`;
-      }
-      const segments = path.split("/").filter(Boolean);
-      if (segments.length >= 2 && segments[0] === "watch") {
-        const id = segments[1];
-        if (id) return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`;
-      }
-    }
-
-    if (host.includes("youtu.be")) {
-      const rawId = url.pathname.replace("/", "").split("/")[0];
-      if (rawId) return `https://www.youtube.com/embed/${rawId}?rel=0&modestbranding=1`;
-    }
-  } catch {
-    return "";
-  }
-
-  return "";
-}
-
-function normalizeAdObject(item, fallbackLabel) {
-  if (!item) return null;
-
-  if (typeof item === "string") {
-    return { type: "image", src: item, title: "", description: "", label: fallbackLabel };
-  }
-
-  if (typeof item === "object") {
-    if (item.type === "youtube") {
-      return {
-        type: "youtube",
-        videoId: item.videoId || "",
-        title: item.title || "Featured video",
-        description: item.description || "",
-        label: "Sponsored"
-      };
-    }
-
-    return {
-      type: "image",
-      src: item.src || item.image || "",
-      title: item.title || "",
-      description: item.description || "",
-      label: item.label || fallbackLabel
-    };
-  }
-
-  return null;
-}
-
-function advertiseWithUsHtml() {
-  return `
-    <div class="advertise-with-us">
-      <p>Advertise with us</p>
-      <a href="mailto:info@eNepal.gov.np">Contact us to place your ad here</a>
-    </div>
-  `;
-}
-
-function buildAdHtml(adData, slotId) {
-  const ad = normalizeAdObject(adData, "Sponsored");
-  if (!ad || (!ad.src && ad.type !== "youtube")) {
-    return `<div class="post-ad" id="${slotId}">${advertiseWithUsHtml()}</div>`;
-  }
-
-  if (ad.type === "youtube") {
-    const videoId = ad.videoId || "";
-    const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : "";
-    const title = sanitizeHtml(ad.title || "Featured video");
-    const description = sanitizeHtml(ad.description || "");
-
-    if (!embedUrl) {
-      return `<div class="post-ad" id="${slotId}">${advertiseWithUsHtml()}</div>`;
-    }
-
-    return `
-      <div class="post-ad post-ad-video" id="${slotId}">
-        <div class="post-ad-video-frame">
-          <iframe src="${embedUrl}" title="${title}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-        </div>
-        <div class="post-ad-copy">
-          <h4>${title}</h4>
-          ${description ? `<p>${description}</p>` : ""}
-        </div>
-      </div>
-    `;
-  }
-
-  return `
-    <div class="post-ad" id="${slotId}">
-      <span class="post-ad-label">${sanitizeHtml(ad.label || "Sponsored")}</span>
-      <img src="${sanitizeHtml(ad.src)}" alt="${sanitizeHtml(ad.title || "Advertisement")}">
-    </div>
-  `;
-}
-
-function splitIntoThirds(arr) {
-  const size = Math.ceil(arr.length / 3) || 1;
-  return [arr.slice(0, size), arr.slice(size, size * 2), arr.slice(size * 2)];
-}
-
-function paragraphsFromBody(body) {
-  return (body || "")
-    .split(/\n\s*\n/)
-    .map((chunk) => chunk.trim())
-    .filter(Boolean)
-    .map((chunk) => `<p>${chunk}</p>`);
-}
-
-function sortPostsByDate(postsArray) {
-  return [...postsArray].sort((a, b) => {
-    const dateA = new Date(a.date || "1970-01-01");
-    const dateB = new Date(b.date || "1970-01-01");
-    return dateB - dateA;
-  });
-}
-
-function renderPostList() {
-  if (!postListEl) return;
-  postListEl.innerHTML = "";
-
-  const sorted = sortPostsByDate(posts);
-  sorted.forEach((post, index) => {
-    const originalIndex = posts.findIndex((item) => item.title === post.title && item.date === post.date);
-    const li = document.createElement("li");
-    const button = document.createElement("button");
-    button.type = "button";
-
-    const num = document.createElement("span");
-    num.className = "num";
-    num.textContent = String(index + 1).padStart(2, "0");
-
-    const title = document.createElement("span");
-    title.className = "title";
-    title.textContent = post.title;
-
-    const date = document.createElement("span");
-    date.className = "date";
-    date.textContent = formatDate(post.date);
-
-    button.append(num, title, date);
-    button.addEventListener("click", () => {
-      loadPost(originalIndex);
-      if (contentEl) contentEl.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-
-    li.appendChild(button);
-    postListEl.appendChild(li);
-  });
-}
-
-function loadPost(index) {
-  const post = posts[index];
-  if (!post) return;
-
-  const paragraphs = paragraphsFromBody(post.body);
-  const [part1, part2, part3] = splitIntoThirds(paragraphs);
-
-  let html = `
-    <article class="post-article">
-      <h2>${sanitizeHtml(post.title)}</h2>
-      <span class="post-date">Published: ${formatDate(post.date)}</span>
-  `;
-
-  if (post.image) {
-    html += `<img src="${sanitizeHtml(post.image)}" alt="${sanitizeHtml(post.title)}">`;
-  }
-
-  html += buildAdHtml(ads.postAd1, "post-ad-slot-1");
-  html += part1.join("");
-  html += buildAdHtml(ads.postAd2, "post-ad-slot-2");
-  html += part2.join("");
-  html += buildAdHtml(ads.postAd3, "post-ad-slot-3");
-  html += part3.join("");
-  html += buildAdHtml(ads.postAd4, "post-ad-slot-4");
-  html += `</article>`;
-
-  contentEl.innerHTML = html;
-}
-
-function renderPostIndex(page = 1) {
-  const sortedPosts = sortPostsByDate(posts);
-  const totalPages = Math.max(1, Math.ceil(sortedPosts.length / 12));
-  const safePage = Math.min(Math.max(1, page), totalPages);
-  const start = (safePage - 1) * 12;
-  const pagePosts = sortedPosts.slice(start, start + 12);
-
-  let html = `<h2>All Posts</h2>`;
-  html += `<span class="post-index-meta">Page ${safePage} of ${totalPages} — ${sortedPosts.length} posts total</span>`;
-  html += `<div class="post-grid">`;
-
-  pagePosts.forEach((post) => {
-    const originalIndex = posts.findIndex((item) => item.title === post.title && item.date === post.date);
-    html += `
-      <div class="post-card">
-        <div class="post-card-image">
-          ${post.image ? `<img src="${sanitizeHtml(post.image)}" alt="${sanitizeHtml(post.title)}">` : "<div class='no-image'>No image</div>"}
-        </div>
-        <h3>${sanitizeHtml(post.title)}</h3>
-        <p class="post-card-date">${formatDate(post.date)}</p>
-        <button type="button" class="read-more" data-post-index="${originalIndex}">Read More</button>
-      </div>
-    `;
-  });
-
-  html += `</div>`;
-
-  if (totalPages > 1) {
-    html += `<nav class="post-index-pagination" aria-label="Post pages">`;
-    for (let p = 1; p <= totalPages; p++) {
-      html += `<button type="button" data-index-page="${p}" class="${p === safePage ? "active" : ""}">${p}</button>`;
-    }
-    html += `</nav>`;
-  }
-
-  contentEl.innerHTML = html;
-  contentEl.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-contentEl.addEventListener("click", (event) => {
-  const postBtn = event.target.closest("[data-post-index]");
-  if (postBtn) {
-    loadPost(Number(postBtn.getAttribute("data-post-index")));
-    return;
-  }
-
-  const pageBtn = event.target.closest("[data-index-page]");
-  if (pageBtn) {
-    renderPostIndex(Number(pageBtn.getAttribute("data-index-page")));
-  }
-});
-
-const seeMoreBtn = document.getElementById("see-more-posts");
-if (seeMoreBtn) {
-  seeMoreBtn.addEventListener("click", () => renderPostIndex(1));
-}
-
-const navToggle = document.getElementById("nav-toggle");
-const navLinks = document.getElementById("nav-links");
-if (navToggle && navLinks) {
-  navToggle.addEventListener("click", () => {
-    const isOpen = navLinks.classList.toggle("open");
-    navToggle.setAttribute("aria-expanded", String(isOpen));
-  });
-}
-
-const dataSaverToggle = document.getElementById("data-saver-toggle");
-function shouldLoadImagesAutomatically() {
-  const saved = localStorage.getItem("loadImages");
-  if (saved !== null) return saved === "true";
-  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-  if (conn && conn.effectiveType) {
-    return !["slow-2g", "2g"].includes(conn.effectiveType);
-  }
-  return true;
-}
-
-if (dataSaverToggle) {
-  dataSaverToggle.checked = shouldLoadImagesAutomatically();
-  dataSaverToggle.addEventListener("change", () => {
-    localStorage.setItem("loadImages", String(dataSaverToggle.checked));
-    document.querySelectorAll("img[data-src]").forEach((img) => {
-      if (dataSaverToggle.checked) {
-        img.src = img.dataset.src;
-      } else {
-        img.removeAttribute("src");
-      }
-    });
-  });
-}
-
-function renderSocialGrid(platform, items) {
-  const panel = document.getElementById("panel-" + platform);
-  if (!panel) return;
-
-  if (!items || items.length === 0) {
-    panel.innerHTML = `<div class="no-content"><p>No ${platform} content added yet.</p></div>`;
-    return;
-  }
-
-  let html = `<div class="social-grid">`;
-
-  items.forEach((item, index) => {
-    if (platform === "youtube") {
-      const iframeUrl = extractYouTubeEmbedUrl(item);
-      if (!iframeUrl) return;
-      html += `
-        <div class="social-item">
-          <iframe src="${iframeUrl}" title="YouTube video ${index + 1}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-        </div>
-      `;
-    } else if (platform === "facebook") {
-      html += `
-        <div class="social-item facebook-item">
-          <iframe src="${sanitizeHtml(item)}" style="border:none; overflow:hidden;" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
-        </div>
-      `;
-    } else if (platform === "tiktok") {
-      html += `
-        <div class="social-item tiktok-item">
-          <a href="${sanitizeHtml(item)}" target="_blank" rel="noopener noreferrer" class="tiktok-card-small">
-            <i class="fab fa-tiktok"></i>
-            <span>TikTok Video ${index + 1}</span>
-          </a>
-        </div>
-      `;
-    }
-  });
-
-  html += `</div>`;
-  panel.innerHTML = html;
-}
-
-const tabButtons = document.querySelectorAll(".tab-btn");
-const tabPanels = document.querySelectorAll(".tab-panel");
-
-tabButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const target = btn.getAttribute("data-tab");
-    tabButtons.forEach((b) => b.classList.remove("active"));
-    tabPanels.forEach((panel) => panel.classList.remove("active"));
-    btn.classList.add("active");
-    const panel = document.getElementById("panel-" + target);
-    if (panel) panel.classList.add("active");
-  });
-});
-
-function renderSidebarAd(ad) {
-  if (!adPlaceholderEl) return;
-
-  adPlaceholderEl.classList.remove("is-visible");
-
-  setTimeout(() => {
-    adPlaceholderEl.innerHTML = `<div class="ad-placeholder-inner"></div>`;
-    const inner = adPlaceholderEl.querySelector(".ad-placeholder-inner");
-    if (!inner) return;
-
-    if (ad.type === "youtube") {
-      const videoId = ad.videoId || "";
-      const title = sanitizeHtml(ad.title || "Featured video");
-      const description = sanitizeHtml(ad.description || "");
-
-      if (!videoId) {
-        inner.innerHTML = advertiseWithUsHtml();
-      } else {
-        inner.innerHTML = `
-          <div class="main-ad-video">
-            <iframe src="https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1" title="${title}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-            <div class="ad-placeholder-copy">
-              <h4>${title}</h4>
-              ${description ? `<p>${description}</p>` : ""}
-            </div>
-          </div>
-        `;
-      }
-    } else if (ad.type === "image" && ad.src) {
-      inner.innerHTML = `<img src="${sanitizeHtml(ad.src)}" alt="${sanitizeHtml(ad.title || "Advertisement")}">`;
-    } else {
-      inner.innerHTML = advertiseWithUsHtml();
-    }
-
-    requestAnimationFrame(() => {
-      adPlaceholderEl.classList.add("is-visible");
-    });
-  }, 100);
-}
-
-function showMainAd(index) {
-  if (!ads.mainAds || !ads.mainAds.length) {
-    if (adPlaceholderEl) {
-      adPlaceholderEl.innerHTML = `<div class="ad-placeholder-inner">${advertiseWithUsHtml()}</div>`;
-      adPlaceholderEl.classList.add("is-visible");
-    }
-    return;
-  }
-
-  const safeIndex = ((index % ads.mainAds.length) + ads.mainAds.length) % ads.mainAds.length;
-  const ad = normalizeAdObject(ads.mainAds[safeIndex], "Sponsored");
-  if (!ad) return;
-
-  if (safeIndex === currentMainAdIndex) return;
-  currentMainAdIndex = safeIndex;
-  renderSidebarAd(ad);
-}
-
-function updateMainAdOnScroll() {
-  if (!ads.mainAds || !ads.mainAds.length) return;
-  const maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 1);
-  const progress = Math.min(Math.max(window.scrollY / maxScroll, 0), 1);
-  const index = Math.min(ads.mainAds.length - 1, Math.floor(progress * ads.mainAds.length));
-  showMainAd(index);
-}
-
-let scrollTicking = false;
-window.addEventListener("scroll", () => {
-  if (!scrollTicking) {
-    requestAnimationFrame(() => {
-      updateMainAdOnScroll();
-      scrollTicking = false;
-    });
-    scrollTicking = true;
-  }
-});
-
-const socialTicker = document.getElementById("social-ticker");
-const socialTickerIcon = document.getElementById("social-ticker-icon");
-const socialTickerText = document.getElementById("social-ticker-text");
-let tickerIndex = 0;
-let tickerHovered = false;
-let tickerTypingComplete = false;
-let tickerTimeout = null;
-
-const socialItems = [
-  { label: "Subscribe on YouTube", url: "https://youtube.com/", icon: "fab fa-youtube" },
-  { label: "Follow on Facebook", url: "https://facebook.com/", icon: "fab fa-facebook" },
-  { label: "Follow on TikTok", url: "https://www.tiktok.com/", icon: "fab fa-tiktok" },
-  { label: "Follow on Instagram", url: "https://instagram.com/", icon: "fab fa-instagram" },
-  { label: "Follow on X", url: "https://x.com/", icon: "fab fa-twitter" }
-];
-
-function typeTickerText(text, charIndex) {
-  if (!socialTickerText) return;
-  socialTickerText.textContent = text.slice(0, charIndex);
-  if (charIndex <= text.length) {
-    tickerTypingComplete = false;
-    tickerTimeout = setTimeout(() => typeTickerText(text, charIndex + 1), 55);
-  } else {
-    tickerTypingComplete = true;
-    scheduleAdvance();
-  }
-}
-
-function scheduleAdvance() {
-  if (tickerTimeout) clearTimeout(tickerTimeout);
-  if (tickerHovered) return;
-  tickerTimeout = setTimeout(advanceTicker, 2200);
-}
-
-function advanceTicker() {
-  tickerIndex = (tickerIndex + 1) % socialItems.length;
-  showTickerItem();
-}
-
-function showTickerItem() {
-  const item = socialItems[tickerIndex];
-  if (!item || !socialTicker) return;
-
-  socialTicker.href = item.url;
-  if (socialTickerIcon) socialTickerIcon.className = item.icon;
-  if (tickerTimeout) clearTimeout(tickerTimeout);
-  typeTickerText(item.label, 0);
-}
-
-if (socialTicker) {
-  socialTicker.addEventListener("mouseenter", () => {
-    tickerHovered = true;
-    if (tickerTypingComplete && tickerTimeout) clearTimeout(tickerTimeout);
-  });
-
-  socialTicker.addEventListener("mouseleave", () => {
-    tickerHovered = false;
-    if (tickerTypingComplete) scheduleAdvance();
-  });
-
-  showTickerItem();
-}
-
-function applySocialConfig(social) {
-  const featuredYoutube = document.getElementById("featured-youtube-iframe");
-  if (featuredYoutube && social.youtubeFeaturedVideoId) {
-    const embedUrl = extractYouTubeEmbedUrl(social.youtubeFeaturedVideoId);
-    if (embedUrl) featuredYoutube.src = embedUrl;
-  }
-
-  const featuredFb = document.getElementById("featured-fb-page");
-  if (featuredFb && social.facebookUsername) {
-    featuredFb.setAttribute("data-href", `https://www.facebook.com/${social.facebookUsername}`);
-  }
-
-  const youtubeVideos = social.youtubeVideos || [];
-  const facebookPosts = social.facebookPosts || [];
-  const tiktokVideos = social.tiktokVideos || [];
-
-  renderInfiniteVideos(youtubeVideos);
-
-  if (youtubeVideos.length > 0) renderSocialGrid("youtube", youtubeVideos);
-  if (facebookPosts.length > 0) renderSocialGrid("facebook", facebookPosts);
-  if (tiktokVideos.length > 0) renderSocialGrid("tiktok", tiktokVideos);
-
-  const links = {
-    youtube: social.youtubeChannelId ? `https://www.youtube.com/@${social.youtubeChannelId}` : "https://www.youtube.com/",
-    facebook: social.facebookUsername ? `https://facebook.com/${social.facebookUsername}` : "https://facebook.com/",
-    tiktok: social.tiktokUsername ? `https://www.tiktok.com/@${social.tiktokUsername}` : "https://www.tiktok.com/",
-    instagram: social.instagramUsername ? `https://instagram.com/${social.instagramUsername}` : "https://instagram.com/",
-    x: social.xUsername ? `https://x.com/${social.xUsername}` : "https://x.com/",
-    email: social.email ? `mailto:${social.email}` : "#"
-  };
-
-  const footerLinks = {
-    "footer-youtube": links.youtube,
-    "footer-tiktok": links.tiktok,
-    "footer-instagram": links.instagram,
-    "footer-facebook": links.facebook,
-    "footer-x": links.x,
-    "footer-email": links.email
-  };
-
-  Object.entries(footerLinks).forEach(([id, href]) => {
-    const el = document.getElementById(id);
-    if (el) el.href = href;
-  });
-
-  socialItems[0].url = links.youtube;
-  socialItems[1].url = links.facebook;
-  socialItems[2].url = links.tiktok;
-  socialItems[3].url = links.instagram;
-  socialItems[4].url = links.x;
-
-  if (socialTicker) socialTicker.href = socialItems[tickerIndex].url;
-}
-
-function renderInfiniteVideos(videos) {
-  const feed = document.getElementById("video-feed-container");
-  if (!feed) return;
-
-  const validVideos = (videos || []).map((video) => extractYouTubeEmbedUrl(video)).filter(Boolean);
-  if (!validVideos.length) {
-    feed.innerHTML = `
-      <article class="video-feed-item">
-        <iframe src="https://www.youtube.com/embed/s5-NQwBsc0s?rel=0&modestbranding=1" title="Fallback video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-        <div class="video-feed-copy">
-          <span class="video-label">Featured</span>
-          <h4>Welcome to TryNepal</h4>
-          <p>Replace this with your own channel video in content/social.json.</p>
-        </div>
-      </article>
-    `;
-    return;
-  }
-
-  const items = validVideos.map((embedUrl, index) => `
-    <article class="video-feed-item" data-video-index="${index}">
-      <iframe src="${embedUrl}" title="Video ${index + 1}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-      <div class="video-feed-copy">
-        <span class="video-label">Featured</span>
-        <h4>Video ${index + 1}</h4>
-        <p>Curated from your YouTube channel.</p>
-      </div>
-    </article>
-  `).join("");
-
-  feed.innerHTML = items;
-}
-
-function setupHomeButtons() {
-  const explorePostsBtn = document.getElementById("explore-posts-btn");
-  const exploreVideosBtn = document.getElementById("explore-videos-btn");
-
-  if (explorePostsBtn) {
-    explorePostsBtn.addEventListener("click", () => renderPostIndex(1));
-  }
-
-  if (exploreVideosBtn) {
-    exploreVideosBtn.addEventListener("click", () => {
-      document.getElementById("video-feed-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }
-}
-
-function injectEmbedScripts() {
-  const fbScript = document.createElement("script");
-  fbScript.async = true;
-  fbScript.defer = true;
-  fbScript.crossOrigin = "anonymous";
-  fbScript.src = "https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v19.0";
-  document.body.appendChild(fbScript);
-}
-
-const masthead = document.querySelector(".masthead");
-function updateMastheadCompact() {
-  if (!masthead) return;
-  if (window.scrollY > 70) masthead.classList.add("is-compact");
-  else masthead.classList.remove("is-compact");
-}
-
-let mastheadTicking = false;
-window.addEventListener("scroll", () => {
-  if (!mastheadTicking) {
-    requestAnimationFrame(() => {
-      updateMastheadCompact();
-      mastheadTicking = false;
-    });
-    mastheadTicking = true;
-  }
-});
-
-if (document.getElementById("year")) {
-  document.getElementById("year").textContent = new Date().getFullYear();
-}
-
-const navPostsLink = document.getElementById("nav-posts-link");
-if (navPostsLink) {
-  navPostsLink.addEventListener("click", (event) => {
-    event.preventDefault();
-    renderPostIndex(1);
-  });
-}
-
-const navContactLink = document.getElementById("nav-contact-link");
-if (navContactLink) {
-  navContactLink.addEventListener("click", (event) => {
-    event.preventDefault();
-    document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-}
-
-async function init() {
-  const [postsData, adsData, socialData] = await Promise.all([
-    fetchJson("content/posts.json", { posts: fallbackPosts }),
-    fetchJson("content/ads.json", fallbackAds),
-    fetchJson("content/social.json", fallbackSocial)
-  ]);
-
-  posts = postsData.posts || fallbackPosts;
-  ads = adsData || fallbackAds;
-
-  renderPostList();
-  setupHomeButtons();
-  showMainAd(0);
-  applySocialConfig(socialData || fallbackSocial);
-  injectEmbedScripts();
-  updateMastheadCompact();
-}
-
-init();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
