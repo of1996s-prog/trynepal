@@ -1,17 +1,16 @@
 {
-  "youtubeChannelId": "Nepal",
-  "youtubeFeaturedVideoId": "Nepal",
+  "youtubeChannelId": "UCKvk5bVH6_LoNNs-aYSFxFQ",
+  "youtubeFeaturedVideoId": "s5-NQwBsc0s",
+  "youtubeVideos": [
+    "s5-NQwBsc0s",
+    "dQw4w9WgXcQ",
+    "jNQXAC9IVRw"
+  ],
   "facebookUsername": "Nepal",
   "tiktokUsername": "Nepal",
   "instagramUsername": "Nepal",
   "xUsername": "Nepal",
   "email": "info@eNepal.gov.np",
-  "youtubeVideos": [
-    "<iframe width="560" height="315" src="https://www.youtube.com/embed/hws97JEXYX8?si=TJc3FseppeasTKMm" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>",
-    "https://www.youtube.com/embed/VIDEO_ID_2",
-    "https://www.youtube.com/watch?v=hws97JEXYX8",
-
-  ],
   "facebookPosts": [
     "https://www.facebook.com/plugins/post.php?href=FACEBOOK_POST_URL_1&show_text=true&width=500",
     "https://www.facebook.com/plugins/post.php?href=FACEBOOK_POST_URL_2&show_text=true&width=500",
@@ -20,7 +19,6 @@
   "tiktokVideos": [
     "https://www.tiktok.com/@Nepal/video/1234567890123456789",
     "https://www.tiktok.com/@Nepal/video/1234567890123456790",
-    "https://www.tiktok.com/@Nepal/video/1234567890123456791",
-
+    "https://www.tiktok.com/@Nepal/video/1234567890123456791"
   ]
 }
