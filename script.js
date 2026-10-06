@@ -1,29 +1,22 @@
 /* =========================================================================
-   Plain, safe JavaScript only: no eval(), no inline event attributes, no
-   unsanitized user input. The only external calls are fetch()-ing your own
-   JSON files and the official Facebook/TikTok embed scripts already
-   loaded in index.html. Fully supported by GitHub Pages free hosting.
-
-   CONTENT LIVES IN JSON (so Decap CMS can edit it):
-     - content/posts.json  -> your posts (title, image, body text, date)
-     - content/ads.json    -> your 4 post-ads + rotating sidebar ads (image or YouTube)
-     - content/social.json -> youtube/facebook/tiktok embed links (flexible count)
-   Edit those directly, or through the /admin panel once Decap CMS's
-   one-time GitHub OAuth setup is done (see admin/config.yml).
+   TryNepal site logic
+   - Homepage uses a continuous video feed
+   - Post content loads only when clicked
+   - Sidebar ad rotates smoothly with scroll and transitions
 ========================================================================= */
 
-/* ---- 0. Fallback content ---- */
-const fallbackPosts = [
-  {
-    title: "Content is loading…",
-    image: "",
-    date: "",
-    body: "If you're seeing this on the live site, content/posts.json failed to load - try a hard refresh. If you're testing locally by double-clicking index.html, that's expected: run a local server."
-  }
-];
+const fallbackPosts = [{
+  title: "Content is loading…",
+  image: "",
+  date: "",
+  body: "If you're seeing this on the live site, content/posts.json failed to load. Try refreshing the page."
+}];
 
 const fallbackAds = {
-  postAd1: "", postAd2: "", postAd3: "", postAd4: "",
+  postAd1: "",
+  postAd2: "",
+  postAd3: "",
+  postAd4: "",
   mainAds: []
 };
 
@@ -40,20 +33,28 @@ const fallbackSocial = {
   tiktokVideos: []
 };
 
+const postListEl = document.getElementById("post-list-items");
+const contentEl = document.getElementById("content");
+const adPlaceholderEl = document.getElementById("ad-placeholder");
+
+let posts = [];
+let ads = fallbackAds;
+let currentMainAdIndex = -1;
+
 async function fetchJson(path, fallback) {
   try {
     const res = await fetch(path, { cache: "no-store" });
     if (!res.ok) throw new Error("bad response");
     return await res.json();
   } catch (err) {
-    console.warn(`Could not load ${path}, using built-in fallback content.`, err);
+    console.warn(`Could not load ${path}; using fallback content.`, err);
     return fallback;
   }
 }
 
-function sanitizeHtml(html) {
+function sanitizeHtml(value) {
   const div = document.createElement("div");
-  div.textContent = html;
+  div.textContent = String(value ?? "");
   return div.innerHTML;
 }
 
@@ -62,7 +63,7 @@ function formatDate(dateString) {
   try {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  } catch (e) {
+  } catch {
     return "";
   }
 }
@@ -73,34 +74,35 @@ function extractYouTubeEmbedUrl(value) {
   if (!cleaned) return "";
 
   if (/^[A-Za-z0-9_-]{11}$/.test(cleaned)) {
-    return `https://www.youtube.com/embed/${cleaned}`;
+    return `https://www.youtube.com/embed/${cleaned}?rel=0&modestbranding=1`;
   }
 
   try {
     const url = new URL(cleaned);
-    const hostname = url.hostname.toLowerCase();
+    const host = url.hostname.toLowerCase();
 
-    if (hostname.includes("youtube.com")) {
-      const v = url.searchParams.get("v");
-      if (v) return `https://www.youtube.com/embed/${v}`;
+    if (host.includes("youtube.com")) {
+      const videoId = url.searchParams.get("v");
+      if (videoId) return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+
       const path = url.pathname || "";
-      if (path.includes("/embed/")) return cleaned;
+      if (path.includes("/embed/")) return `${cleaned.includes("?") ? cleaned : cleaned + "?rel=0&modestbranding=1"}`;
       if (path.includes("/shorts/")) {
         const id = path.split("/shorts/")[1]?.split("/")[0];
-        if (id) return `https://www.youtube.com/embed/${id}`;
+        if (id) return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`;
       }
       const segments = path.split("/").filter(Boolean);
       if (segments.length >= 2 && segments[0] === "watch") {
         const id = segments[1];
-        if (id) return `https://www.youtube.com/embed/${id}`;
+        if (id) return `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`;
       }
     }
 
-    if (hostname.includes("youtu.be")) {
-      const id = url.pathname.replace("/", "").split("/")[0];
-      if (id) return `https://www.youtube.com/embed/${id}`;
+    if (host.includes("youtu.be")) {
+      const rawId = url.pathname.replace("/", "").split("/")[0];
+      if (rawId) return `https://www.youtube.com/embed/${rawId}?rel=0&modestbranding=1`;
     }
-  } catch (err) {
+  } catch {
     return "";
   }
 
@@ -111,13 +113,7 @@ function normalizeAdObject(item, fallbackLabel) {
   if (!item) return null;
 
   if (typeof item === "string") {
-    return {
-      type: "image",
-      src: item,
-      title: "",
-      description: "",
-      label: fallbackLabel
-    };
+    return { type: "image", src: item, title: "", description: "", label: fallbackLabel };
   }
 
   if (typeof item === "object") {
@@ -127,7 +123,7 @@ function normalizeAdObject(item, fallbackLabel) {
         videoId: item.videoId || "",
         title: item.title || "Featured video",
         description: item.description || "",
-        label: ""
+        label: "Sponsored"
       };
     }
 
@@ -144,15 +140,16 @@ function normalizeAdObject(item, fallbackLabel) {
 }
 
 function advertiseWithUsHtml() {
-  return `<div class="advertise-with-us">
-            <p>Advertise with us</p>
-            <a href="mailto:you@example.com">Contact us to place your ad here</a>
-          </div>`;
+  return `
+    <div class="advertise-with-us">
+      <p>Advertise with us</p>
+      <a href="mailto:info@eNepal.gov.np">Contact us to place your ad here</a>
+    </div>
+  `;
 }
 
 function buildAdHtml(adData, slotId) {
   const ad = normalizeAdObject(adData, "Sponsored");
-
   if (!ad || (!ad.src && ad.type !== "youtube")) {
     return `<div class="post-ad" id="${slotId}">${advertiseWithUsHtml()}</div>`;
   }
@@ -167,32 +164,25 @@ function buildAdHtml(adData, slotId) {
       return `<div class="post-ad" id="${slotId}">${advertiseWithUsHtml()}</div>`;
     }
 
-    return `<div class="post-ad post-ad-video" id="${slotId}">
-      <div class="post-ad-video-frame">
-        <iframe
-          src="${embedUrl}"
-          title="${title}"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen
-        ></iframe>
+    return `
+      <div class="post-ad post-ad-video" id="${slotId}">
+        <div class="post-ad-video-frame">
+          <iframe src="${embedUrl}" title="${title}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <div class="post-ad-copy">
+          <h4>${title}</h4>
+          ${description ? `<p>${description}</p>` : ""}
+        </div>
       </div>
-      <div class="post-ad-copy">
-        <h4>${title}</h4>
-        ${description ? `<p>${description}</p>` : ""}
-      </div>
-    </div>`;
+    `;
   }
 
-  return `<div class="post-ad" id="${slotId}">
-    <span class="post-ad-label">${ad.label}</span>
-    <img class="lazy-img" data-src="${sanitizeHtml(ad.src)}" alt="${sanitizeHtml(ad.title || "Advertisement")}">
-  </div>`;
-}
-
-function attachAdErrorFallback(imgEl, containerEl) {
-  imgEl.addEventListener("error", () => {
-    containerEl.innerHTML = advertiseWithUsHtml();
-  }, { once: true });
+  return `
+    <div class="post-ad" id="${slotId}">
+      <span class="post-ad-label">${sanitizeHtml(ad.label || "Sponsored")}</span>
+      <img src="${sanitizeHtml(ad.src)}" alt="${sanitizeHtml(ad.title || "Advertisement")}">
+    </div>
+  `;
 }
 
 function splitIntoThirds(arr) {
@@ -208,12 +198,6 @@ function paragraphsFromBody(body) {
     .map((chunk) => `<p>${chunk}</p>`);
 }
 
-const postListEl = document.getElementById("post-list-items");
-const contentEl = document.getElementById("content");
-
-let posts = [];
-let ads = fallbackAds;
-
 function sortPostsByDate(postsArray) {
   return [...postsArray].sort((a, b) => {
     const dateA = new Date(a.date || "1970-01-01");
@@ -223,10 +207,12 @@ function sortPostsByDate(postsArray) {
 }
 
 function renderPostList() {
+  if (!postListEl) return;
   postListEl.innerHTML = "";
-  const sortedPosts = sortPostsByDate(posts);
-  sortedPosts.forEach((post, index) => {
-    const originalIndex = posts.findIndex(p => p.title === post.title);
+
+  const sorted = sortPostsByDate(posts);
+  sorted.forEach((post, index) => {
+    const originalIndex = posts.findIndex((item) => item.title === post.title && item.date === post.date);
     const li = document.createElement("li");
     const button = document.createElement("button");
     button.type = "button";
@@ -243,12 +229,10 @@ function renderPostList() {
     date.className = "date";
     date.textContent = formatDate(post.date);
 
-    button.appendChild(num);
-    button.appendChild(title);
-    button.appendChild(date);
+    button.append(num, title, date);
     button.addEventListener("click", () => {
       loadPost(originalIndex);
-      contentEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (contentEl) contentEl.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
     li.appendChild(button);
@@ -258,15 +242,19 @@ function renderPostList() {
 
 function loadPost(index) {
   const post = posts[index];
+  if (!post) return;
+
   const paragraphs = paragraphsFromBody(post.body);
   const [part1, part2, part3] = splitIntoThirds(paragraphs);
 
-  let html = `<article class="post-article">
-    <h2>${sanitizeHtml(post.title)}</h2>
-    <p class="post-date">Published: ${formatDate(post.date)}</p>`;
+  let html = `
+    <article class="post-article">
+      <h2>${sanitizeHtml(post.title)}</h2>
+      <span class="post-date">Published: ${formatDate(post.date)}</span>
+  `;
 
   if (post.image) {
-    html += `<img data-src="${sanitizeHtml(post.image)}" alt="${sanitizeHtml(post.title)}" class="lazy-img">`;
+    html += `<img src="${sanitizeHtml(post.image)}" alt="${sanitizeHtml(post.title)}">`;
   }
 
   html += buildAdHtml(ads.postAd1, "post-ad-slot-1");
@@ -279,44 +267,39 @@ function loadPost(index) {
   html += `</article>`;
 
   contentEl.innerHTML = html;
-  applyImageLoadingPreference();
-
-  ["post-ad-slot-1", "post-ad-slot-2", "post-ad-slot-3", "post-ad-slot-4"].forEach((id) => {
-    const slot = document.getElementById(id);
-    const img = slot ? slot.querySelector("img") : null;
-    if (img) attachAdErrorFallback(img, slot);
-  });
 }
 
-const POSTS_PER_PAGE = 12;
-
-function renderPostIndex(page) {
+function renderPostIndex(page = 1) {
   const sortedPosts = sortPostsByDate(posts);
-  const totalPages = Math.max(1, Math.ceil(sortedPosts.length / POSTS_PER_PAGE));
-  page = Math.min(Math.max(1, page), totalPages);
-  const start = (page - 1) * POSTS_PER_PAGE;
-  const pagePosts = sortedPosts.slice(start, start + POSTS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(sortedPosts.length / 12));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * 12;
+  const pagePosts = sortedPosts.slice(start, start + 12);
 
   let html = `<h2>All Posts</h2>`;
-  html += `<p class="post-index-meta">Page ${page} of ${totalPages} — ${sortedPosts.length} posts total</p>`;
+  html += `<span class="post-index-meta">Page ${safePage} of ${totalPages} — ${sortedPosts.length} posts total</span>`;
   html += `<div class="post-grid">`;
+
   pagePosts.forEach((post) => {
-    const originalIndex = posts.findIndex(p => p.title === post.title);
-    html += `<div class="post-card">
-      <div class="post-card-image">
-        ${post.image ? `<img src="${sanitizeHtml(post.image)}" alt="${sanitizeHtml(post.title)}" class="lazy-img">` : `<div class="no-image">No Image</div>`}
+    const originalIndex = posts.findIndex((item) => item.title === post.title && item.date === post.date);
+    html += `
+      <div class="post-card">
+        <div class="post-card-image">
+          ${post.image ? `<img src="${sanitizeHtml(post.image)}" alt="${sanitizeHtml(post.title)}">` : "<div class='no-image'>No image</div>"}
+        </div>
+        <h3>${sanitizeHtml(post.title)}</h3>
+        <p class="post-card-date">${formatDate(post.date)}</p>
+        <button type="button" class="read-more" data-post-index="${originalIndex}">Read More</button>
       </div>
-      <h3>${sanitizeHtml(post.title)}</h3>
-      <p class="post-card-date">${formatDate(post.date)}</p>
-      <button type="button" data-post-index="${originalIndex}" class="read-more">Read More</button>
-    </div>`;
+    `;
   });
+
   html += `</div>`;
 
   if (totalPages > 1) {
     html += `<nav class="post-index-pagination" aria-label="Post pages">`;
     for (let p = 1; p <= totalPages; p++) {
-      html += `<button type="button" data-index-page="${p}" class="${p === page ? "active" : ""}">${p}</button>`;
+      html += `<button type="button" data-index-page="${p}" class="${p === safePage ? "active" : ""}">${p}</button>`;
     }
     html += `</nav>`;
   }
@@ -325,13 +308,14 @@ function renderPostIndex(page) {
   contentEl.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-contentEl.addEventListener("click", (e) => {
-  const postBtn = e.target.closest("[data-post-index]");
+contentEl.addEventListener("click", (event) => {
+  const postBtn = event.target.closest("[data-post-index]");
   if (postBtn) {
     loadPost(Number(postBtn.getAttribute("data-post-index")));
     return;
   }
-  const pageBtn = e.target.closest("[data-index-page]");
+
+  const pageBtn = event.target.closest("[data-index-page]");
   if (pageBtn) {
     renderPostIndex(Number(pageBtn.getAttribute("data-index-page")));
   }
@@ -344,7 +328,6 @@ if (seeMoreBtn) {
 
 const navToggle = document.getElementById("nav-toggle");
 const navLinks = document.getElementById("nav-links");
-
 if (navToggle && navLinks) {
   navToggle.addEventListener("click", () => {
     const isOpen = navLinks.classList.toggle("open");
@@ -353,196 +336,149 @@ if (navToggle && navLinks) {
 }
 
 const dataSaverToggle = document.getElementById("data-saver-toggle");
-
-function getSavedPreference() {
-  const stored = localStorage.getItem("loadImages");
-  return stored === null ? null : stored === "true";
-}
-
 function shouldLoadImagesAutomatically() {
-  const manual = getSavedPreference();
-  if (manual !== null) return manual;
-  const conn = navigator.connection || navigator.webkitConnection || navigator.mozConnection;
+  const saved = localStorage.getItem("loadImages");
+  if (saved !== null) return saved === "true";
+  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
   if (conn && conn.effectiveType) {
     return !["slow-2g", "2g"].includes(conn.effectiveType);
   }
   return true;
 }
 
-function applyImageLoadingPreference() {
-  const shouldLoad = shouldLoadImagesAutomatically();
-  document.querySelectorAll("img.lazy-img[data-src]").forEach((img) => {
-    if (shouldLoad) {
-      if (img.getAttribute("data-src")) img.src = img.getAttribute("data-src");
-      img.loading = "lazy";
-    } else {
-      img.removeAttribute("src");
-      if (!img.alt.includes("(image hidden")) {
-        img.alt += " (image hidden to save data — tap 'Load images' in the menu to view)";
-      }
-    }
-  });
-}
-
 if (dataSaverToggle) {
   dataSaverToggle.checked = shouldLoadImagesAutomatically();
   dataSaverToggle.addEventListener("change", () => {
     localStorage.setItem("loadImages", String(dataSaverToggle.checked));
-    applyImageLoadingPreference();
+    document.querySelectorAll("img[data-src]").forEach((img) => {
+      if (dataSaverToggle.checked) {
+        img.src = img.dataset.src;
+      } else {
+        img.removeAttribute("src");
+      }
+    });
   });
 }
-
-window.addEventListener("DOMContentLoaded", () => {
-  const banner = document.getElementById("banner-img");
-  if (banner && !shouldLoadImagesAutomatically()) {
-    banner.dataset.fullSrc = banner.src;
-    banner.removeAttribute("src");
-    banner.alt += " (hidden to save data)";
-  }
-});
-
-const tabButtons = document.querySelectorAll(".tab-btn");
-const tabPanels = document.querySelectorAll(".tab-panel");
 
 function renderSocialGrid(platform, items) {
   const panel = document.getElementById("panel-" + platform);
   if (!panel) return;
 
   if (!items || items.length === 0) {
-    panel.innerHTML = `<div class="no-content"><p>No ${platform} content added yet. Edit social.json to add embed links.</p></div>`;
+    panel.innerHTML = `<div class="no-content"><p>No ${platform} content added yet.</p></div>`;
     return;
   }
 
-  let html = `<div class="social-grid" data-items="${items.length}">`;
+  let html = `<div class="social-grid">`;
+
   items.forEach((item, index) => {
     if (platform === "youtube") {
-      const embedUrl = extractYouTubeEmbedUrl(item);
-      if (!embedUrl) return;
-      html += `<div class="social-item">
-        <iframe 
-          width="100%" 
-          height="315" 
-          src="${sanitizeHtml(embedUrl)}" 
-          title="YouTube Video ${index + 1}"
-          frameborder="0" 
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-          allowfullscreen>
-        </iframe>
-      </div>`;
+      const iframeUrl = extractYouTubeEmbedUrl(item);
+      if (!iframeUrl) return;
+      html += `
+        <div class="social-item">
+          <iframe src="${iframeUrl}" title="YouTube video ${index + 1}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+      `;
     } else if (platform === "facebook") {
-      html += `<div class="social-item facebook-item">
-        <iframe 
-          src="${sanitizeHtml(item)}" 
-          width="100%" 
-          height="300" 
-          style="border:none;overflow:hidden" 
-          scrolling="no" 
-          frameborder="0" 
-          allowfullscreen="true" 
-          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share">
-        </iframe>
-      </div>`;
+      html += `
+        <div class="social-item facebook-item">
+          <iframe src="${sanitizeHtml(item)}" style="border:none; overflow:hidden;" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe>
+        </div>
+      `;
     } else if (platform === "tiktok") {
-      html += `<div class="social-item tiktok-item">
-        <a href="${sanitizeHtml(item)}" target="_blank" rel="noopener noreferrer" class="tiktok-card-small">
-          <i class="fab fa-tiktok"></i>
-          <span>TikTok Video ${index + 1}</span>
-        </a>
-      </div>`;
+      html += `
+        <div class="social-item tiktok-item">
+          <a href="${sanitizeHtml(item)}" target="_blank" rel="noopener noreferrer" class="tiktok-card-small">
+            <i class="fab fa-tiktok"></i>
+            <span>TikTok Video ${index + 1}</span>
+          </a>
+        </div>
+      `;
     }
   });
-  html += `</div>`;
 
+  html += `</div>`;
   panel.innerHTML = html;
 }
+
+const tabButtons = document.querySelectorAll(".tab-btn");
+const tabPanels = document.querySelectorAll(".tab-panel");
 
 tabButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
     const target = btn.getAttribute("data-tab");
     tabButtons.forEach((b) => b.classList.remove("active"));
-    tabPanels.forEach((p) => p.classList.remove("active"));
+    tabPanels.forEach((panel) => panel.classList.remove("active"));
     btn.classList.add("active");
-    document.getElementById("panel-" + target).classList.add("active");
+    const panel = document.getElementById("panel-" + target);
+    if (panel) panel.classList.add("active");
   });
 });
-
-const adPlaceholderEl = document.querySelector(".ad-placeholder");
-let currentMainAdIndex = -1;
-
-function showAdvertiseWithUsInSidebar() {
-  if (adPlaceholderEl) adPlaceholderEl.innerHTML = advertiseWithUsHtml();
-}
 
 function renderSidebarAd(ad) {
   if (!adPlaceholderEl) return;
 
-  if (ad.type === "youtube") {
-    const videoId = ad.videoId || "";
-    const title = sanitizeHtml(ad.title || "Featured video");
-    const description = sanitizeHtml(ad.description || "");
+  adPlaceholderEl.classList.remove("is-visible");
 
-    if (!videoId) {
-      showAdvertiseWithUsInSidebar();
-      return;
+  setTimeout(() => {
+    adPlaceholderEl.innerHTML = `<div class="ad-placeholder-inner"></div>`;
+    const inner = adPlaceholderEl.querySelector(".ad-placeholder-inner");
+    if (!inner) return;
+
+    if (ad.type === "youtube") {
+      const videoId = ad.videoId || "";
+      const title = sanitizeHtml(ad.title || "Featured video");
+      const description = sanitizeHtml(ad.description || "");
+
+      if (!videoId) {
+        inner.innerHTML = advertiseWithUsHtml();
+      } else {
+        inner.innerHTML = `
+          <div class="main-ad-video">
+            <iframe src="https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1" title="${title}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            <div class="ad-placeholder-copy">
+              <h4>${title}</h4>
+              ${description ? `<p>${description}</p>` : ""}
+            </div>
+          </div>
+        `;
+      }
+    } else if (ad.type === "image" && ad.src) {
+      inner.innerHTML = `<img src="${sanitizeHtml(ad.src)}" alt="${sanitizeHtml(ad.title || "Advertisement")}">`;
+    } else {
+      inner.innerHTML = advertiseWithUsHtml();
     }
 
-    adPlaceholderEl.innerHTML = `
-      <div class="main-ad-video">
-        <div class="main-ad-video-frame">
-          <iframe
-            src="https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1"
-            title="${title}"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen
-          ></iframe>
-        </div>
-        <div class="main-ad-video-copy">
-          <h4>${title}</h4>
-          ${description ? `<p>${description}</p>` : ""}
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  if (ad.type === "image" && ad.src) {
-    adPlaceholderEl.innerHTML = `
-      <img
-        class="lazy-img"
-        alt="${sanitizeHtml(ad.title || "Advertisement")}" 
-        data-src="${sanitizeHtml(ad.src)}"
-      >
-    `;
-    applyImageLoadingPreference();
-    return;
-  }
-
-  showAdvertiseWithUsInSidebar();
+    requestAnimationFrame(() => {
+      adPlaceholderEl.classList.add("is-visible");
+    });
+  }, 100);
 }
 
 function showMainAd(index) {
   if (!ads.mainAds || !ads.mainAds.length) {
-    showAdvertiseWithUsInSidebar();
+    if (adPlaceholderEl) {
+      adPlaceholderEl.innerHTML = `<div class="ad-placeholder-inner">${advertiseWithUsHtml()}</div>`;
+      adPlaceholderEl.classList.add("is-visible");
+    }
     return;
   }
 
-  const ad = normalizeAdObject(ads.mainAds[index], "Sponsored");
-  if (!ad) {
-    showAdvertiseWithUsInSidebar();
-    return;
-  }
+  const safeIndex = ((index % ads.mainAds.length) + ads.mainAds.length) % ads.mainAds.length;
+  const ad = normalizeAdObject(ads.mainAds[safeIndex], "Sponsored");
+  if (!ad) return;
 
-  if (index === currentMainAdIndex) return;
-  currentMainAdIndex = index;
-
+  if (safeIndex === currentMainAdIndex) return;
+  currentMainAdIndex = safeIndex;
   renderSidebarAd(ad);
 }
 
 function updateMainAdOnScroll() {
   if (!ads.mainAds || !ads.mainAds.length) return;
-  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-  const scrollPercent = scrollable > 0 ? window.scrollY / scrollable : 0;
-  const index = Math.min(ads.mainAds.length - 1, Math.floor(scrollPercent * ads.mainAds.length));
+  const maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 1);
+  const progress = Math.min(Math.max(window.scrollY / maxScroll, 0), 1);
+  const index = Math.min(ads.mainAds.length - 1, Math.floor(progress * ads.mainAds.length));
   showMainAd(index);
 }
 
@@ -557,23 +493,24 @@ window.addEventListener("scroll", () => {
   }
 });
 
-const socialItems = [
-  { label: "Subscribe on YouTube", url: "https://youtube.com/@yourchannel", icon: "fab fa-youtube" },
-  { label: "Follow along on Facebook", url: "https://facebook.com/yourpage", icon: "fab fa-facebook" },
-  { label: "Follow along on TikTok", url: "https://www.tiktok.com/@yourhandle", icon: "fab fa-tiktok" },
-  { label: "Follow along on Instagram", url: "https://instagram.com/yourhandle", icon: "fab fa-instagram" },
-  { label: "Follow along on X", url: "https://x.com/yourhandle", icon: "fab fa-twitter" }
-];
-
 const socialTicker = document.getElementById("social-ticker");
 const socialTickerIcon = document.getElementById("social-ticker-icon");
 const socialTickerText = document.getElementById("social-ticker-text");
 let tickerIndex = 0;
 let tickerHovered = false;
 let tickerTypingComplete = false;
-let tickerTimeout;
+let tickerTimeout = null;
+
+const socialItems = [
+  { label: "Subscribe on YouTube", url: "https://youtube.com/", icon: "fab fa-youtube" },
+  { label: "Follow on Facebook", url: "https://facebook.com/", icon: "fab fa-facebook" },
+  { label: "Follow on TikTok", url: "https://www.tiktok.com/", icon: "fab fa-tiktok" },
+  { label: "Follow on Instagram", url: "https://instagram.com/", icon: "fab fa-instagram" },
+  { label: "Follow on X", url: "https://x.com/", icon: "fab fa-twitter" }
+];
 
 function typeTickerText(text, charIndex) {
+  if (!socialTickerText) return;
   socialTickerText.textContent = text.slice(0, charIndex);
   if (charIndex <= text.length) {
     tickerTypingComplete = false;
@@ -585,7 +522,7 @@ function typeTickerText(text, charIndex) {
 }
 
 function scheduleAdvance() {
-  clearTimeout(tickerTimeout);
+  if (tickerTimeout) clearTimeout(tickerTimeout);
   if (tickerHovered) return;
   tickerTimeout = setTimeout(advanceTicker, 2200);
 }
@@ -597,16 +534,18 @@ function advanceTicker() {
 
 function showTickerItem() {
   const item = socialItems[tickerIndex];
+  if (!item || !socialTicker) return;
+
   socialTicker.href = item.url;
-  socialTickerIcon.className = item.icon;
-  clearTimeout(tickerTimeout);
+  if (socialTickerIcon) socialTickerIcon.className = item.icon;
+  if (tickerTimeout) clearTimeout(tickerTimeout);
   typeTickerText(item.label, 0);
 }
 
 if (socialTicker) {
   socialTicker.addEventListener("mouseenter", () => {
     tickerHovered = true;
-    if (tickerTypingComplete) clearTimeout(tickerTimeout);
+    if (tickerTypingComplete && tickerTimeout) clearTimeout(tickerTimeout);
   });
 
   socialTicker.addEventListener("mouseleave", () => {
@@ -633,28 +572,22 @@ function applySocialConfig(social) {
   const facebookPosts = social.facebookPosts || [];
   const tiktokVideos = social.tiktokVideos || [];
 
-  renderHomeVideoCarousel(youtubeVideos);
+  renderInfiniteVideos(youtubeVideos);
 
-  if (youtubeVideos.length > 0) {
-    renderSocialGrid("youtube", youtubeVideos);
-  }
-  if (facebookPosts.length > 0) {
-    renderSocialGrid("facebook", facebookPosts);
-  }
-  if (tiktokVideos.length > 0) {
-    renderSocialGrid("tiktok", tiktokVideos);
-  }
+  if (youtubeVideos.length > 0) renderSocialGrid("youtube", youtubeVideos);
+  if (facebookPosts.length > 0) renderSocialGrid("facebook", facebookPosts);
+  if (tiktokVideos.length > 0) renderSocialGrid("tiktok", tiktokVideos);
 
   const links = {
-    youtube: social.youtubeChannelId ? `https://www.youtube.com/channel/${social.youtubeChannelId}` : "#",
-    facebook: social.facebookUsername ? `https://facebook.com/${social.facebookUsername}` : "#",
-    tiktok: social.tiktokUsername ? `https://www.tiktok.com/@${social.tiktokUsername}` : "#",
-    instagram: social.instagramUsername ? `https://instagram.com/${social.instagramUsername}` : "#",
-    x: social.xUsername ? `https://x.com/${social.xUsername}` : "#",
+    youtube: social.youtubeChannelId ? `https://www.youtube.com/@${social.youtubeChannelId}` : "https://www.youtube.com/",
+    facebook: social.facebookUsername ? `https://facebook.com/${social.facebookUsername}` : "https://facebook.com/",
+    tiktok: social.tiktokUsername ? `https://www.tiktok.com/@${social.tiktokUsername}` : "https://www.tiktok.com/",
+    instagram: social.instagramUsername ? `https://instagram.com/${social.instagramUsername}` : "https://instagram.com/",
+    x: social.xUsername ? `https://x.com/${social.xUsername}` : "https://x.com/",
     email: social.email ? `mailto:${social.email}` : "#"
   };
 
-  const idToLink = {
+  const footerLinks = {
     "footer-youtube": links.youtube,
     "footer-tiktok": links.tiktok,
     "footer-instagram": links.instagram,
@@ -663,78 +596,51 @@ function applySocialConfig(social) {
     "footer-email": links.email
   };
 
-  Object.keys(idToLink).forEach((id) => {
+  Object.entries(footerLinks).forEach(([id, href]) => {
     const el = document.getElementById(id);
-    if (el) el.href = idToLink[id];
+    if (el) el.href = href;
   });
 
-  if (socialItems.length) {
-    socialItems[0].url = links.youtube;
-    socialItems[1].url = links.facebook;
-    socialItems[2].url = links.tiktok;
-    socialItems[3].url = links.instagram;
-    socialItems[4].url = links.x;
-    if (socialTicker) socialTicker.href = socialItems[tickerIndex].url;
-  }
+  socialItems[0].url = links.youtube;
+  socialItems[1].url = links.facebook;
+  socialItems[2].url = links.tiktok;
+  socialItems[3].url = links.instagram;
+  socialItems[4].url = links.x;
+
+  if (socialTicker) socialTicker.href = socialItems[tickerIndex].url;
 }
 
-function renderHomeVideoCarousel(videos) {
-  const track = document.getElementById("carousel-track");
-  const dots = document.getElementById("carousel-dots");
-  const prevBtn = document.querySelector(".carousel-prev");
-  const nextBtn = document.querySelector(".carousel-next");
-
-  if (!track || !dots) return;
+function renderInfiniteVideos(videos) {
+  const feed = document.getElementById("video-feed-container");
+  if (!feed) return;
 
   const validVideos = (videos || []).map((video) => extractYouTubeEmbedUrl(video)).filter(Boolean);
-
   if (!validVideos.length) {
-    track.innerHTML = `<div class="carousel-video-item"><iframe src="https://www.youtube.com/embed/hws97JEXYX8?rel=0&modestbranding=1" title="Featured video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-    dots.innerHTML = `<button class="carousel-dot active" type="button" aria-label="Show slide 1"></button>`;
+    feed.innerHTML = `
+      <article class="video-feed-item">
+        <iframe src="https://www.youtube.com/embed/s5-NQwBsc0s?rel=0&modestbranding=1" title="Fallback video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        <div class="video-feed-copy">
+          <span class="video-label">Featured</span>
+          <h4>Welcome to TryNepal</h4>
+          <p>Replace this with your own channel video in content/social.json.</p>
+        </div>
+      </article>
+    `;
     return;
   }
 
-  let currentSlide = 0;
-
-  function renderSlide() {
-    track.innerHTML = validVideos.map((video) => `
-      <div class="carousel-video-item">
-        <iframe src="${video}" title="Featured video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+  const items = validVideos.map((embedUrl, index) => `
+    <article class="video-feed-item" data-video-index="${index}">
+      <iframe src="${embedUrl}" title="Video ${index + 1}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      <div class="video-feed-copy">
+        <span class="video-label">Featured</span>
+        <h4>Video ${index + 1}</h4>
+        <p>Curated from your YouTube channel.</p>
       </div>
-    `).join("");
+    </article>
+  `).join("");
 
-    track.style.transform = `translateX(-${currentSlide * 100}%)`;
-
-    dots.innerHTML = validVideos.map((_, idx) => `
-      <button class="carousel-dot ${idx === currentSlide ? "active" : ""}" type="button" aria-label="Show slide ${idx + 1}"></button>
-    `).join("");
-
-    dots.querySelectorAll(".carousel-dot").forEach((dot, idx) => {
-      dot.addEventListener("click", () => {
-        currentSlide = idx;
-        renderSlide();
-      });
-    });
-
-    if (prevBtn) prevBtn.disabled = validVideos.length <= 1;
-    if (nextBtn) nextBtn.disabled = validVideos.length <= 1;
-  }
-
-  if (prevBtn) {
-    prevBtn.addEventListener("click", () => {
-      currentSlide = (currentSlide - 1 + validVideos.length) % validVideos.length;
-      renderSlide();
-    });
-  }
-
-  if (nextBtn) {
-    nextBtn.addEventListener("click", () => {
-      currentSlide = (currentSlide + 1) % validVideos.length;
-      renderSlide();
-    });
-  }
-
-  renderSlide();
+  feed.innerHTML = items;
 }
 
 function setupHomeButtons() {
@@ -742,17 +648,12 @@ function setupHomeButtons() {
   const exploreVideosBtn = document.getElementById("explore-videos-btn");
 
   if (explorePostsBtn) {
-    explorePostsBtn.addEventListener("click", () => {
-      renderPostIndex(1);
-    });
+    explorePostsBtn.addEventListener("click", () => renderPostIndex(1));
   }
 
   if (exploreVideosBtn) {
     exploreVideosBtn.addEventListener("click", () => {
-      const videoSection = document.getElementById("video-carousel-section");
-      if (videoSection) {
-        videoSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
+      document.getElementById("video-feed-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }
 }
@@ -767,15 +668,10 @@ function injectEmbedScripts() {
 }
 
 const masthead = document.querySelector(".masthead");
-
 function updateMastheadCompact() {
   if (!masthead) return;
-  const isCompact = masthead.classList.contains("is-compact");
-  if (!isCompact && window.scrollY > 70) {
-    masthead.classList.add("is-compact");
-  } else if (isCompact && window.scrollY < 20) {
-    masthead.classList.remove("is-compact");
-  }
+  if (window.scrollY > 70) masthead.classList.add("is-compact");
+  else masthead.classList.remove("is-compact");
 }
 
 let mastheadTicking = false;
@@ -789,28 +685,25 @@ window.addEventListener("scroll", () => {
   }
 });
 
-updateMastheadCompact();
+if (document.getElementById("year")) {
+  document.getElementById("year").textContent = new Date().getFullYear();
+}
 
 const navPostsLink = document.getElementById("nav-posts-link");
 if (navPostsLink) {
-  navPostsLink.addEventListener("click", (e) => {
-    e.preventDefault();
+  navPostsLink.addEventListener("click", (event) => {
+    event.preventDefault();
     renderPostIndex(1);
   });
 }
 
 const navContactLink = document.getElementById("nav-contact-link");
 if (navContactLink) {
-  navContactLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    const footer = document.getElementById("contact");
-    if (footer) {
-      footer.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+  navContactLink.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
-
-document.getElementById("year").textContent = new Date().getFullYear();
 
 async function init() {
   const [postsData, adsData, socialData] = await Promise.all([
@@ -825,9 +718,9 @@ async function init() {
   renderPostList();
   setupHomeButtons();
   showMainAd(0);
-
   applySocialConfig(socialData || fallbackSocial);
   injectEmbedScripts();
+  updateMastheadCompact();
 }
 
 init();
